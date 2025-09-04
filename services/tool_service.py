@@ -195,15 +195,12 @@ class ToolService:
                         tool_id = f"{module_name}.{name}"
 
                         # Check if tool supports streaming and metadata by inspecting its signature
-                        supports_streaming = False
                         supports_metadata = False
                         try:
                             sig = inspect.signature(fn)
-                            supports_streaming = "response_context" in sig.parameters
                             supports_metadata = "metadata" in sig.parameters
                         except Exception:
                             # If signature inspection fails, assume no streaming or metadata support
-                            supports_streaming = False
                             supports_metadata = False
 
                         registry[tool_id] = {
@@ -235,7 +232,6 @@ class ToolService:
                             "ui_handlers": (
                                 ui_handlers if isinstance(ui_handlers, dict) else None
                             ),
-                            "supports_streaming": supports_streaming,
                             "supports_metadata": supports_metadata,
                         }
                     except Exception:
@@ -256,8 +252,6 @@ class ToolService:
                         flags.append("one-time")
                     if tool.get("ui_feature"):
                         flags.append("ui")
-                    if tool.get("supports_streaming"):
-                        flags.append("streaming")
                     if tool.get("supports_metadata"):
                         flags.append("metadata")
                     if tool.get("condition"):
@@ -421,7 +415,6 @@ class ToolService:
                 ),
                 "parameters": tool.get("parameters", {}),
                 "ui_feature": tool.get("ui_feature"),
-                "supports_streaming": bool(tool.get("supports_streaming", False)),
             })
         return tools
 
@@ -454,7 +447,6 @@ class ToolService:
                 ),
                 "parameters": tool.get("parameters", {}),
                 "ui_feature": tool.get("ui_feature"),
-                "supports_streaming": bool(tool.get("supports_streaming", False)),
             }
 
             files[module_name]["tools"].append(tool_info)
