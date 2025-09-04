@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { SettingsSidebar } from "@/components/SettingsSidebar";
+import { SettingsSidebar } from "@/components/layout/SettingsSidebar";
 
 interface SettingsModalProps {
   open: boolean;
