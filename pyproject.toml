@@ -1,0 +1,14 @@
+[project]
+name = "gp2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiosqlite>=0.21.0",
+    "fastapi==0.104.1",
+    "greenlet>=3.2.3",
+    "openai==1.98.0",
+    "sqlalchemy>=2.0.42",
+    "uvicorn[standard]==0.24.0",
+]
