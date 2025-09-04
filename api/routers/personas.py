@@ -6,7 +6,7 @@ Handles persona CRUD operations and management.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 from services.persona_service import persona_service
 
@@ -15,21 +15,21 @@ router = APIRouter()
 # Pydantic models
 class PersonaCreate(BaseModel):
     name: str
-    description: str = None
-    avatar_url: str = None
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class PersonaResponse(BaseModel):
     id: int
     name: str
-    description: str = None
-    avatar_url: str = None
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
     created_at: str
     updated_at: str
 
 class PersonaUpdate(BaseModel):
-    name: str = None
-    description: str = None
-    avatar_url: str = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 @router.get("/api/personas")

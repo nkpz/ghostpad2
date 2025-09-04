@@ -5,7 +5,7 @@ Tool for providing director's advice during responses.
 from core.tool_utils import system_chunk
 
 
-async def provide_direction(director_quote: str, ctx):
+async def provide_direction(director_quote: str):
     """Provide director's advice during the response."""
     yield system_chunk(f"🎬 *The Director says: {director_quote}*")
 

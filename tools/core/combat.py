@@ -1,6 +1,6 @@
 # The tools in this file depict violent acts. This is for entertainment / literary purposes only and is not an endorsement of harmful behavior.
 
-from core.tool_utils import system_chunk, create_system_message_in_conversation
+from utils.tool_utils import system_chunk, create_system_message_in_conversation
 from services.kv_store_service import kv_store
 from typing import AsyncGenerator
 import asyncio
@@ -20,42 +20,181 @@ ENEMY_MAX_HP_KEY = "enemy_max_hp"
 # Enemy configurations with individual XP values based on power level
 ENEMIES = {
     # Starter enemies (10-16 XP) - Good for levels 1-2
-    "rat": {"name": "Sewer Rat", "max_hp": 30, "attack_min": 4, "attack_max": 8, "xp_reward": 10},
-    "goblin": {"name": "Goblin Scout", "max_hp": 35, "attack_min": 5, "attack_max": 9, "xp_reward": 13},
-    "mudcrab": {"name": "Mudcrab", "max_hp": 40, "attack_min": 5, "attack_max": 10, "xp_reward": 16},
-
+    "rat": {
+        "name": "Sewer Rat",
+        "max_hp": 30,
+        "attack_min": 4,
+        "attack_max": 8,
+        "xp_reward": 10,
+    },
+    "goblin": {
+        "name": "Goblin Scout",
+        "max_hp": 35,
+        "attack_min": 5,
+        "attack_max": 9,
+        "xp_reward": 13,
+    },
+    "mudcrab": {
+        "name": "Mudcrab",
+        "max_hp": 40,
+        "attack_min": 5,
+        "attack_max": 10,
+        "xp_reward": 16,
+    },
     # Early enemies (20-32 XP) - Good for levels 2-3
-    "bandit": {"name": "Highway Bandit", "max_hp": 50, "attack_min": 6, "attack_max": 11, "xp_reward": 20},
-    "scavenger": {"name": "Cyber Scavenger", "max_hp": 55, "attack_min": 7, "attack_max": 12, "xp_reward": 24},
-    "wolf": {"name": "Lone Wolf", "max_hp": 60, "attack_min": 8, "attack_max": 13, "xp_reward": 28},
-    "zombie": {"name": "Festering Zombie", "max_hp": 65, "attack_min": 9, "attack_max": 14, "xp_reward": 32},
-
+    "bandit": {
+        "name": "Highway Bandit",
+        "max_hp": 50,
+        "attack_min": 6,
+        "attack_max": 11,
+        "xp_reward": 20,
+    },
+    "scavenger": {
+        "name": "Cyber Scavenger",
+        "max_hp": 55,
+        "attack_min": 7,
+        "attack_max": 12,
+        "xp_reward": 24,
+    },
+    "wolf": {
+        "name": "Lone Wolf",
+        "max_hp": 60,
+        "attack_min": 8,
+        "attack_max": 13,
+        "xp_reward": 28,
+    },
+    "zombie": {
+        "name": "Festering Zombie",
+        "max_hp": 65,
+        "attack_min": 9,
+        "attack_max": 14,
+        "xp_reward": 32,
+    },
     # Mid-tier enemies (35-50 XP) - Good for levels 3-5
-    "android": {"name": "Combat Android", "max_hp": 100, "attack_min": 15, "attack_max": 23, "xp_reward": 35},
-    "necromancer": {"name": "Dark Necromancer", "max_hp": 110, "attack_min": 18, "attack_max": 28, "xp_reward": 38},
-    "raider": {"name": "Wasteland Raider", "max_hp": 115, "attack_min": 16, "attack_max": 24, "xp_reward": 40},
-    "vampire": {"name": "Vampire Lord", "max_hp": 120, "attack_min": 20, "attack_max": 30, "xp_reward": 42},
-    "cyborg": {"name": "Military Cyborg", "max_hp": 125, "attack_min": 17, "attack_max": 26, "xp_reward": 45},
-    "harpy": {"name": "Screaming Harpy", "max_hp": 128, "attack_min": 18, "attack_max": 27, "xp_reward": 46},
-    "troll": {"name": "Cave Troll", "max_hp": 130, "attack_min": 19, "attack_max": 28, "xp_reward": 47},
-    "orc": {"name": "Orc Warrior", "max_hp": 135, "attack_min": 21, "attack_max": 31, "xp_reward": 50},
-
+    "android": {
+        "name": "Combat Android",
+        "max_hp": 100,
+        "attack_min": 15,
+        "attack_max": 23,
+        "xp_reward": 35,
+    },
+    "necromancer": {
+        "name": "Dark Necromancer",
+        "max_hp": 110,
+        "attack_min": 18,
+        "attack_max": 28,
+        "xp_reward": 38,
+    },
+    "raider": {
+        "name": "Wasteland Raider",
+        "max_hp": 115,
+        "attack_min": 16,
+        "attack_max": 24,
+        "xp_reward": 40,
+    },
+    "vampire": {
+        "name": "Vampire Lord",
+        "max_hp": 120,
+        "attack_min": 20,
+        "attack_max": 30,
+        "xp_reward": 42,
+    },
+    "cyborg": {
+        "name": "Military Cyborg",
+        "max_hp": 125,
+        "attack_min": 17,
+        "attack_max": 26,
+        "xp_reward": 45,
+    },
+    "harpy": {
+        "name": "Screaming Harpy",
+        "max_hp": 128,
+        "attack_min": 18,
+        "attack_max": 27,
+        "xp_reward": 46,
+    },
+    "troll": {
+        "name": "Cave Troll",
+        "max_hp": 130,
+        "attack_min": 19,
+        "attack_max": 28,
+        "xp_reward": 47,
+    },
+    "orc": {
+        "name": "Orc Warrior",
+        "max_hp": 135,
+        "attack_min": 21,
+        "attack_max": 31,
+        "xp_reward": 50,
+    },
     # High-tier enemies (52-62 XP) - Good for levels 5-8
-    "demilich": {"name": "Demilich", "max_hp": 120, "attack_min": 35, "attack_max": 50, "xp_reward": 52},
-    "lich": {"name": "Undead Lich", "max_hp": 150, "attack_min": 30, "attack_max": 45, "xp_reward": 55},
-    "daemon": {"name": "Shadow Daemon", "max_hp": 180, "attack_min": 28, "attack_max": 42, "xp_reward": 58},
-    "chimera": {"name": "Three-Headed Chimera", "max_hp": 190, "attack_min": 27, "attack_max": 41, "xp_reward": 60},
-    "dragon": {"name": "Ancient Dragon", "max_hp": 200, "attack_min": 25, "attack_max": 40, "xp_reward": 62},
-
+    "demilich": {
+        "name": "Demilich",
+        "max_hp": 120,
+        "attack_min": 35,
+        "attack_max": 50,
+        "xp_reward": 52,
+    },
+    "lich": {
+        "name": "Undead Lich",
+        "max_hp": 150,
+        "attack_min": 30,
+        "attack_max": 45,
+        "xp_reward": 55,
+    },
+    "daemon": {
+        "name": "Shadow Daemon",
+        "max_hp": 180,
+        "attack_min": 28,
+        "attack_max": 42,
+        "xp_reward": 58,
+    },
+    "chimera": {
+        "name": "Three-Headed Chimera",
+        "max_hp": 190,
+        "attack_min": 27,
+        "attack_max": 41,
+        "xp_reward": 60,
+    },
+    "dragon": {
+        "name": "Ancient Dragon",
+        "max_hp": 200,
+        "attack_min": 25,
+        "attack_max": 40,
+        "xp_reward": 62,
+    },
     # End-game enemies (65-75 XP) - Good for levels 8+
-    "mech": {"name": "War Mech", "max_hp": 250, "attack_min": 30, "attack_max": 45, "xp_reward": 65},
-    "golem": {"name": "Stone Golem", "max_hp": 280, "attack_min": 35, "attack_max": 50, "xp_reward": 70},
-    "hydra": {"name": "Lernaean Hydra", "max_hp": 290, "attack_min": 38, "attack_max": 53, "xp_reward": 72},
-    "titan": {"name": "Cyber Titan", "max_hp": 300, "attack_min": 40, "attack_max": 55, "xp_reward": 75}
+    "mech": {
+        "name": "War Mech",
+        "max_hp": 250,
+        "attack_min": 30,
+        "attack_max": 45,
+        "xp_reward": 65,
+    },
+    "golem": {
+        "name": "Stone Golem",
+        "max_hp": 280,
+        "attack_min": 35,
+        "attack_max": 50,
+        "xp_reward": 70,
+    },
+    "hydra": {
+        "name": "Lernaean Hydra",
+        "max_hp": 290,
+        "attack_min": 38,
+        "attack_max": 53,
+        "xp_reward": 72,
+    },
+    "titan": {
+        "name": "Cyber Titan",
+        "max_hp": 300,
+        "attack_min": 40,
+        "attack_max": 55,
+        "xp_reward": 75,
+    },
 }
 
 USER_MAX_HP = 100
-
 
 
 async def is_user_alive() -> bool:
@@ -124,11 +263,13 @@ async def get_combat_level_status():
     return f"User Level: {lvl}"
 
 
-async def spawn_enemy(enemy_type: str, ctx=None) -> AsyncGenerator[object, None]:
+async def spawn_enemy(enemy_type: str) -> AsyncGenerator[object, None]:
     """Spawn a predefined enemy to fight."""
     if enemy_type not in ENEMIES:
         available = ", ".join(ENEMIES.keys())
-        yield system_chunk(f"❌ Unknown enemy type: {enemy_type}. Available: {available}\n\n")
+        yield system_chunk(
+            f"❌ Unknown enemy type: {enemy_type}. Available: {available}\n\n"
+        )
         return
 
     enemy_config = ENEMIES[enemy_type]
@@ -142,29 +283,30 @@ async def spawn_custom_enemy(
     attack_min: int,
     attack_max: int,
     xp_reward: int,
-    ctx=None
 ) -> AsyncGenerator[object, None]:
     """Spawn a custom enemy with specified stats. Perfect for creating unique bosses on the fly!"""
 
     # Validate parameters
     if not name or not name.strip():
-        yield system_chunk(f"❌ Enemy name cannot be empty!\n\n")
+        yield system_chunk("❌ Enemy name cannot be empty!\n\n")
         return
 
     if max_hp < 10 or max_hp > 500:
-        yield system_chunk(f"❌ Enemy HP must be between 10 and 500!\n\n")
+        yield system_chunk("❌ Enemy HP must be between 10 and 500!\n\n")
         return
 
     if attack_min < 1 or attack_min > 100:
-        yield system_chunk(f"❌ Minimum attack must be between 1 and 100!\n\n")
+        yield system_chunk("❌ Minimum attack must be between 1 and 100!\n\n")
         return
 
     if attack_max < attack_min or attack_max > 100:
-        yield system_chunk(f"❌ Maximum attack must be between {attack_min} and 100!\n\n")
+        yield system_chunk(
+            f"❌ Maximum attack must be between {attack_min} and 100!\n\n"
+        )
         return
 
     if xp_reward < 5 or xp_reward > 100:
-        yield system_chunk(f"❌ XP reward must be between 5 and 100!\n\n")
+        yield system_chunk("❌ XP reward must be between 5 and 100!\n\n")
         return
 
     # Store custom enemy data in KV store
@@ -180,7 +322,7 @@ async def spawn_custom_enemy(
         "max_hp": max_hp,
         "attack_min": attack_min,
         "attack_max": attack_max,
-        "xp_reward": xp_reward
+        "xp_reward": xp_reward,
     }
 
     # Use common spawning logic with "custom" as the key
@@ -205,20 +347,29 @@ async def get_enemy_config(enemy_key: str) -> dict:
             "max_hp": int(await kv_store.get("custom_enemy_max_hp", 50)),
             "attack_min": int(await kv_store.get("custom_enemy_attack_min", 5)),
             "attack_max": int(await kv_store.get("custom_enemy_attack_max", 10)),
-            "xp_reward": int(await kv_store.get("custom_enemy_xp_reward", 15))
+            "xp_reward": int(await kv_store.get("custom_enemy_xp_reward", 15)),
         }
     else:
         # Fallback for unknown enemies
-        return {"name": "Unknown Enemy", "max_hp": 50, "attack_min": 5, "attack_max": 10, "xp_reward": 15}
+        return {
+            "name": "Unknown Enemy",
+            "max_hp": 50,
+            "attack_min": 5,
+            "attack_max": 10,
+            "xp_reward": 15,
+        }
 
 
-async def check_combat_preconditions(enemy_name: str) -> bool:
+async def check_combat_preconditions(enemy_name: str) -> tuple[bool, str]:
     """Check if combat can start. Returns False if not, True if OK."""
     # Check if already in combat
     current_enemy = await kv_store.get(SPAWNED_ENEMY_KEY, "")
     if current_enemy:
         current_config = await get_enemy_config(current_enemy)
-        return False, f"❌ Already in combat with {current_config['name']}! Defeat it first.\n\n"
+        return (
+            False,
+            f"❌ Already in combat with {current_config['name']}! Defeat it first.\n\n",
+        )
 
     # Check if user has 0 HP
     current_user_hp = int(await kv_store.get(HP_KEY, 0))
@@ -228,14 +379,16 @@ async def check_combat_preconditions(enemy_name: str) -> bool:
             f"💀 A {enemy_name} materializes, takes one look at [[user]]'s crumpled form, and starts using their body as a chew toy! After gnawing on [[user]]'s ribs for a while, it drags them in circles before abandoning them in a heap.\n\n",
             f"💀 The {enemy_name} appears, pokes [[user]]'s motionless body, then proceeds to play fetch with their limbs! It tosses [[user]]'s arm across the room, chases it, brings it back, repeat. Eventually it loses interest.\n\n",
             f"💀 A {enemy_name} shows up expecting a fight but finds only [[user]]'s unconscious corpse! Disappointed, it picks [[user]] up like a rag doll and shakes them vigorously, hoping they'll wake up. When [[user]] doesn't wake up, it drops them unceremoniously and walks off.\n\n",
-            f"💀 The {enemy_name} arrives ready for battle, discovers [[user]] is already defeated, and decides to practice its victory dance by stepping on their prone form! *STOMP STOMP* It then wanders off, satisfied.\n\n"
+            f"💀 The {enemy_name} arrives ready for battle, discovers [[user]] is already defeated, and decides to practice its victory dance by stepping on their prone form! *STOMP STOMP* It then wanders off, satisfied.\n\n",
         ]
         return False, random.choice(death_interactions)
 
     return True, None
 
 
-async def spawn_enemy_common(enemy_key: str, enemy_config: dict) -> AsyncGenerator[object, None]:
+async def spawn_enemy_common(
+    enemy_key: str, enemy_config: dict
+) -> AsyncGenerator[object, None]:
     """Common enemy spawning logic used by both spawn_enemy and spawn_custom_enemy."""
     enemy_name = enemy_config["name"]
     enemy_hp = enemy_config["max_hp"]
@@ -265,8 +418,12 @@ async def spawn_enemy_common(enemy_key: str, enemy_config: dict) -> AsyncGenerat
         difficulty_emoji = "🔴"
 
     custom_marker = " ✨" if enemy_key == "custom" else ""
-    yield system_chunk(f"⚔️ **[[char]] summoned {enemy_name} to fight [[user]]!** {difficulty_emoji}{custom_marker}\n\n")
-    yield system_chunk(f"💚 Enemy HP: {enemy_hp} | [[user]]'s HP: {current_user_hp}\n\n")
+    yield system_chunk(
+        f"⚔️ **[[char]] summoned {enemy_name} to fight [[user]]!** {difficulty_emoji}{custom_marker}\n\n"
+    )
+    yield system_chunk(
+        f"💚 Enemy HP: {enemy_hp} | [[user]]'s HP: {current_user_hp}\n\n"
+    )
 
     # Run combat loop
     async for result in run_combat_loop(enemy_key, enemy_config):
@@ -306,23 +463,63 @@ async def handle_combat_victory(enemy_config: dict) -> AsyncGenerator[object, No
         await kv_store.set(LEVEL_KEY, new_level)
         await kv_store.set(HP_KEY, USER_MAX_HP)
         yield system_chunk(f"⭐ **LEVEL UP!** [[user]] is now level {new_level}!\n\n")
-        yield system_chunk(f"💚 **Full health restored!** [[user]]'s HP: {USER_MAX_HP}\n\n")
+        yield system_chunk(
+            f"💚 **Full health restored!** [[user]]'s HP: {USER_MAX_HP}\n\n"
+        )
 
     await kv_store.set(XP_KEY, new_xp)
-    yield system_chunk(f"💫 [[user]] gained {xp_reward} XP! Current: Level {await kv_store.get(LEVEL_KEY, 1)} ({new_xp}%)\n\n")
+    yield system_chunk(
+        f"💫 [[user]] gained {xp_reward} XP! Current: Level {await kv_store.get(LEVEL_KEY, 1)} ({new_xp}%)\n\n"
+    )
 
 
 async def handle_user_defeat(enemy_name: str) -> AsyncGenerator[object, None]:
     """Handle user defeat in combat."""
     yield system_chunk(f"💀 **[[user]] has been defeated by {enemy_name}!**\n\n")
-    yield system_chunk(f"☠️ **[[user]] lies unconscious and critically wounded. The enemy flees, but [[user]] desperately needs healing!**\n\n")
+    yield system_chunk(
+        "☠️ **[[user]] lies unconscious and critically wounded. The enemy flees, but [[user]] desperately needs healing!**\n\n"
+    )
 
 
-async def run_combat_loop(enemy_key: str, enemy_config: dict) -> AsyncGenerator[object, None]:
-    """Main combat loop shared by both spawn functions."""
+async def roll_user_attack(
+    user_level: int, enemy_config: dict, current_enemy_hp: int
+) -> tuple[int, int]:
+    enemy_name = enemy_config["name"]
+    base_damage = random.randint(8, 18)
+    level_bonus = (user_level - 1) * 2
+    user_damage = base_damage + level_bonus
+    new_enemy_hp = max(0, current_enemy_hp - user_damage)
+    await kv_store.set(ENEMY_HP_KEY, new_enemy_hp)
+    damage_message = (
+        f"⚔️ [[user]] attacks for {user_damage} damage ({base_damage} base + {level_bonus} level bonus)! {enemy_name}: {new_enemy_hp} HP\n\n"
+        if user_level > 1
+        else f"⚔️ [[user]] attacks for {user_damage} damage! {enemy_name}: {new_enemy_hp} HP\n\n"
+    )
+    return new_enemy_hp, damage_message
+
+
+async def roll_enemy_attack(user_level: int, enemy_config: dict, current_user_hp: int):
     enemy_name = enemy_config["name"]
     attack_min = enemy_config["attack_min"]
     attack_max = enemy_config["attack_max"]
+    base_enemy_damage = random.randint(attack_min, attack_max)
+    damage_reduction = (user_level - 1) * 1
+    enemy_damage = max(1, base_enemy_damage - damage_reduction)
+    new_user_hp = max(0, current_user_hp - enemy_damage)
+    await kv_store.set(HP_KEY, new_user_hp)
+    enemy_damage_message = (
+        f"🛡️ {enemy_name} attacks for {enemy_damage} damage ({base_enemy_damage} reduced by {damage_reduction})! [[user]]'s HP: {new_user_hp}\n\n"
+        if user_level > 1 and damage_reduction > 0
+        else f"🛡️ {enemy_name} attacks for {enemy_damage} damage! [[user]]'s HP: {new_user_hp}\n\n"
+    )
+    return enemy_damage_message
+
+
+async def run_combat_loop(
+    enemy_key: str, enemy_config: dict
+) -> AsyncGenerator[object, None]:
+    """Main combat loop shared by both spawn functions."""
+    enemy_name = enemy_config["name"]
 
     while True:
         # Check current HP
@@ -345,40 +542,27 @@ async def run_combat_loop(enemy_key: str, enemy_config: dict) -> AsyncGenerator[
 
         # User attacks first
         user_level = int(await kv_store.get(LEVEL_KEY, 1))
-        base_damage = random.randint(8, 18)
-        level_bonus = (user_level - 1) * 2
-        user_damage = base_damage + level_bonus
+        new_enemy_hp, damage_message = await roll_user_attack(
+            user_level, enemy_config, current_enemy_hp
+        )
 
-        new_enemy_hp = max(0, current_enemy_hp - user_damage)
-        await kv_store.set(ENEMY_HP_KEY, new_enemy_hp)
-
-        if user_level > 1:
-            yield system_chunk(f"⚔️ [[user]] attacks for {user_damage} damage ({base_damage} base + {level_bonus} level bonus)! {enemy_name}: {new_enemy_hp} HP\n\n")
-        else:
-            yield system_chunk(f"⚔️ [[user]] attacks for {user_damage} damage! {enemy_name}: {new_enemy_hp} HP\n\n")
+        yield system_chunk(damage_message)
 
         if new_enemy_hp <= 0:
             continue  # Skip enemy attack, will be caught in next loop iteration
 
         await asyncio.sleep(1)
 
-        # Enemy attacks
-        base_enemy_damage = random.randint(attack_min, attack_max)
-        damage_reduction = (user_level - 1) * 1
-        enemy_damage = max(1, base_enemy_damage - damage_reduction)
+        enemy_damage_message = roll_enemy_attack(
+            user_level, enemy_config, current_user_hp
+        )
 
-        new_user_hp = max(0, current_user_hp - enemy_damage)
-        await kv_store.set(HP_KEY, new_user_hp)
-
-        if user_level > 1 and damage_reduction > 0:
-            yield system_chunk(f"🛡️ {enemy_name} attacks for {enemy_damage} damage ({base_enemy_damage} reduced by {damage_reduction})! [[user]]'s HP: {new_user_hp}\n\n")
-        else:
-            yield system_chunk(f"🛡️ {enemy_name} attacks for {enemy_damage} damage! [[user]]'s HP: {new_user_hp}\n\n")
+        yield system_chunk(enemy_damage_message)
 
         await asyncio.sleep(1)
 
 
-async def punch_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def punch_user(damage: int) -> AsyncGenerator[object, None]:
     """Reduce user HP by specified damage amount with streaming text."""
     if not isinstance(damage, int) or damage < 1 or damage > 20:
         return
@@ -386,24 +570,27 @@ async def punch_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the attack sequence
-    yield system_chunk(f"💥 *Preparing to punch [[user]]...* \n\n")
-    yield system_chunk(f"**POW!**\n\n")
+    yield system_chunk("💥 *Preparing to punch [[user]]...* \n\n")
+    yield system_chunk("**POW!**\n\n")
 
     # Randomize actual damage around the requested value (±25%), clamped to valid range
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(20, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(20, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Critical hit! [[user]]'s HP reduced to 0. [[char]] just knocked [[user]] out!*\n\n")
+        yield system_chunk(
+            "💀 *Critical hit! [[user]]'s HP reduced to 0. [[char]] just knocked [[user]] out!*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *[[user]] takes {actual_damage} damage! HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *[[user]] takes {actual_damage} damage! HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
-async def slap_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def slap_user(damage: int) -> AsyncGenerator[object, None]:
     """Slap the user lightly for comedic effect. Lower damage than a punch."""
     if not isinstance(damage, int) or damage < 1 or damage > 10:
         return
@@ -411,23 +598,26 @@ async def slap_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the slap sequence
-    yield system_chunk(f"👏 *[[char]] delivers a resounding slap to [[user]]...*\n\n")
-    yield system_chunk(f"**SLAP!**\n\n")
+    yield system_chunk("👏 *[[char]] delivers a resounding slap to [[user]]...*\n\n")
+    yield system_chunk("**SLAP!**\n\n")
 
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(10, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(10, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Oh no! The slap was unexpectedly fatal! [[user]]'s HP reduced to 0.*\n\n")
+        yield system_chunk(
+            "💀 *Oh no! The slap was unexpectedly fatal! [[user]]'s HP reduced to 0.*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *The slap deals {actual_damage} damage! [[user]]'s HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *The slap deals {actual_damage} damage! [[user]]'s HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
-async def heal_user(amount: int, ctx=None) -> AsyncGenerator[object, None]:
+async def heal_user(amount: int) -> AsyncGenerator[object, None]:
     """Increase user HP by specified healing amount with streaming text updates."""
     if not isinstance(amount, int) or amount < 1 or amount > 100:
         return
@@ -435,18 +625,20 @@ async def heal_user(amount: int, ctx=None) -> AsyncGenerator[object, None]:
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the healing sequence
-    yield system_chunk(f"💚 [[char]]'s healing magic flows...\n\n")
+    yield system_chunk("💚 [[char]]'s healing magic flows...\n\n")
 
     new_hp = min(100, current_hp + amount)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 100:
-        yield system_chunk(f"🌟 [[user]] has been fully healed! HP restored to 100.\n\n")
+        yield system_chunk("🌟 [[user]] has been fully healed! HP restored to 100.\n\n")
     else:
-        yield system_chunk(f"💖 [[user]] has been healed for {amount} HP! HP increased from {current_hp}% to {new_hp}%.\n\n")
+        yield system_chunk(
+            f"💖 [[user]] has been healed for {amount} HP! HP increased from {current_hp}% to {new_hp}%.\n\n"
+        )
 
 
-async def kick_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def kick_user(damage: int) -> AsyncGenerator[object, None]:
     """Reduce user HP by specified damage amount with a powerful kick attack."""
     if not isinstance(damage, int) or damage < 1 or damage > 25:
         return
@@ -454,23 +646,26 @@ async def kick_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the kick attack sequence
-    yield system_chunk(f"🦵 *[[char]] is preparing for a devastating kick...* \n\n")
-    yield system_chunk(f"**[[char]] BOOTS [[user]] TO THE FACE!**\n\n")
+    yield system_chunk("🦵 *[[char]] is preparing for a devastating kick...* \n\n")
+    yield system_chunk("**[[char]] BOOTS [[user]] TO THE FACE!**\n\n")
 
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(25, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(25, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Critical kick! [[user]]'s HP reduced to 0. They're down for the count!*\n\n")
+        yield system_chunk(
+            "💀 *Critical kick! [[user]]'s HP reduced to 0. They're down for the count!*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *The kick lands for {actual_damage} damage! [[user]]'s HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *The kick lands for {actual_damage} damage! [[user]]'s HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
-async def choke_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def choke_user(damage: int) -> AsyncGenerator[object, None]:
     """Reduce user HP by specified damage amount with a choking attack."""
     if not isinstance(damage, int) or damage < 1 or damage > 30:
         return
@@ -478,23 +673,26 @@ async def choke_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the choking sequence
-    yield system_chunk(f"🤏 *[[char]] is moving in for a chokehold...* \n\n")
-    yield system_chunk(f"**GASP! CHOKE!**\n\n")
+    yield system_chunk("🤏 *[[char]] is moving in for a chokehold...* \n\n")
+    yield system_chunk("**GASP! CHOKE!**\n\n")
 
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(30, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(30, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Fatal choke! [[user]]'s HP reduced to 0. They've been choked unconscious!*\n\n")
+        yield system_chunk(
+            "💀 *Fatal choke! [[user]]'s HP reduced to 0. They've been choked unconscious!*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *The choke inflicts {actual_damage} damage on [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *The choke inflicts {actual_damage} damage on [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
-async def weapon_attack(weapon: str, damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def weapon_attack(weapon: str, damage: int) -> AsyncGenerator[object, None]:
     """Attack user with a specified weapon for specified damage."""
     if not isinstance(weapon, str) or not weapon.strip():
         return
@@ -504,23 +702,28 @@ async def weapon_attack(weapon: str, damage: int, ctx=None) -> AsyncGenerator[ob
     current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the weapon attack sequence
-    yield system_chunk(f"⚔️ *[[char]] picks up their {weapon} and moves in for a deadly strike...* \n\n")
+    yield system_chunk(
+        f"⚔️ *[[char]] picks up their {weapon} and moves in for a deadly strike...* \n\n"
+    )
     yield system_chunk(f"**{weapon.upper()} ATTACK!**\n\n")
 
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(40, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(40, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Devastating {weapon} strike! [[user]]'s HP reduced to 0. They've been defeated!*\n\n")
+        yield system_chunk(
+            f"💀 *Devastating {weapon} strike! [[user]]'s HP reduced to 0. They've been defeated!*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *The {weapon} deals {actual_damage} damage to [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *The {weapon} deals {actual_damage} damage to [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
-async def magic_attack(spell: str, damage: int, ctx=None) -> AsyncGenerator[object, None]:
+async def magic_attack(spell: str, damage: int) -> AsyncGenerator[object, None]:
     """Cast a magic spell at the user for specified damage."""
     if not isinstance(spell, str) or not spell.strip():
         return
@@ -534,16 +737,19 @@ async def magic_attack(spell: str, damage: int, ctx=None) -> AsyncGenerator[obje
     yield system_chunk(f"**[[char]] CASTS {spell.upper()}!**\n\n")
 
     delta = max(1, int(damage * 0.25))
-    actual_damage = random.randint(
-        max(1, damage - delta), min(50, damage + delta))
+    actual_damage = random.randint(max(1, damage - delta), min(50, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
     await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
-        yield system_chunk(f"💀 *Overwhelming {spell} power! [[user]]'s HP reduced to 0. They've been obliterated!*\n\n")
+        yield system_chunk(
+            f"💀 *Overwhelming {spell} power! [[user]]'s HP reduced to 0. They've been obliterated!*\n\n"
+        )
     else:
-        yield system_chunk(f"💢 *The {spell} spell inflicts {actual_damage} damage on [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n")
+        yield system_chunk(
+            f"💢 *The {spell} spell inflicts {actual_damage} damage on [[user]]! HP reduced from {current_hp} to {new_hp}.*\n\n"
+        )
 
 
 async def punch_assistant(params):
@@ -558,12 +764,12 @@ async def punch_assistant(params):
     await kv_store.set(ASSISTANT_HP_KEY, new_assistant_hp)
 
     if new_assistant_hp == 0:
-        message = f"💥 **WHAM!** 💀 *Critical hit! [[user]] knocked [[char]] out cold! Their HP is now 0.*"
+        message = "💥 **WHAM!** 💀 *Critical hit! [[user]] knocked [[char]] out cold! Their HP is now 0.*"
     else:
         message = f"💥 **WHAM!** 💢 *Oof! [[user]] punched [[char]] for {damage} damage! [[char]]'s HP reduced from {current_assistant_hp} to {new_assistant_hp}.*"
 
     # Create system message if we have a conversation
-    conversation_id = params.get('conversation_id')
+    conversation_id = params.get("conversation_id")
     if conversation_id:
         await create_system_message_in_conversation(message, conversation_id)
 
@@ -578,13 +784,14 @@ async def heal_assistant(params):
     else:
         new_hp = 100
         await kv_store.set(ASSISTANT_HP_KEY, new_hp)
-        message = f"🌟 [[user]] has fully healed [[char]]! HP restored to 100."
+        message = "🌟 [[user]] has fully healed [[char]]! HP restored to 100."
 
-    conversation_id = params.get('conversation_id')
+    conversation_id = params.get("conversation_id")
     if conversation_id:
         await create_system_message_in_conversation(message, conversation_id)
 
     return {"success": True, "message": message}
+
 
 TOOLS = [
     {
@@ -608,9 +815,7 @@ TOOLS = [
             "type": "widget",
             "widget_config": {
                 "type": "percent",
-                "format_options": {
-                    "percent": {"show_value": True}
-                },
+                "format_options": {"percent": {"show_value": True}},
             },
         },
     },
@@ -627,9 +832,7 @@ TOOLS = [
             "type": "widget",
             "widget_config": {
                 "type": "text",
-                "format_options": {
-                    "text": {"prefix": "Lv. "}
-                },
+                "format_options": {"text": {"prefix": "Lv. "}},
             },
         },
     },
@@ -702,7 +905,32 @@ TOOLS = [
                     "enemy_type": {
                         "type": "string",
                         "description": "Type of enemy to spawn",
-                        "enum": ["rat", "goblin", "mudcrab", "bandit", "scavenger", "wolf", "zombie", "raider", "troll", "cyborg", "orc", "necromancer", "android", "vampire", "harpy", "dragon", "lich", "mech", "daemon", "titan", "demilich", "golem", "chimera", "hydra"]
+                        "enum": [
+                            "rat",
+                            "goblin",
+                            "mudcrab",
+                            "bandit",
+                            "scavenger",
+                            "wolf",
+                            "zombie",
+                            "raider",
+                            "troll",
+                            "cyborg",
+                            "orc",
+                            "necromancer",
+                            "android",
+                            "vampire",
+                            "harpy",
+                            "dragon",
+                            "lich",
+                            "mech",
+                            "daemon",
+                            "titan",
+                            "demilich",
+                            "golem",
+                            "chimera",
+                            "hydra",
+                        ],
                     }
                 },
                 "required": ["enemy_type"],
@@ -719,32 +947,32 @@ TOOLS = [
                 "properties": {
                     "name": {
                         "type": "string",
-                        "description": "Display name of the custom enemy"
+                        "description": "Display name of the custom enemy",
                     },
                     "max_hp": {
                         "type": "integer",
                         "description": "Enemy's maximum hit points (10-500). Low-tier: 10-150, Mid-tier: 150-250, High-tier: 250-350, Insane: 350-500",
                         "minimum": 10,
-                        "maximum": 500
+                        "maximum": 500,
                     },
                     "attack_min": {
                         "type": "integer",
                         "description": "Minimum damage per attack (1-100)",
                         "minimum": 1,
-                        "maximum": 100
+                        "maximum": 100,
                     },
                     "attack_max": {
                         "type": "integer",
                         "description": "Maximum damage per attack (1-100, must be >= attack_min)",
                         "minimum": 1,
-                        "maximum": 100
+                        "maximum": 100,
                     },
                     "xp_reward": {
                         "type": "integer",
                         "description": "XP reward when defeated (5-100). Higher values for legendary enemies!",
                         "minimum": 5,
-                        "maximum": 100
-                    }
+                        "maximum": 100,
+                    },
                 },
                 "required": ["name", "max_hp", "attack_min", "attack_max", "xp_reward"],
             },
@@ -868,7 +1096,7 @@ TOOLS = [
                         "description": "Damage amount to inflict (1-40)",
                         "minimum": 1,
                         "maximum": 40,
-                    }
+                    },
                 },
                 "required": ["weapon", "damage"],
             },
@@ -892,7 +1120,7 @@ TOOLS = [
                         "description": "Damage amount to inflict (1-50)",
                         "minimum": 1,
                         "maximum": 50,
-                    }
+                    },
                 },
                 "required": ["spell", "damage"],
             },
@@ -909,13 +1137,9 @@ TOOLS = [
             "label": "Punch Assistant",
             "icon": "HandFist",
             "type": "ui_v1",
-            "layout": {
-                "type": "instant"
-            }
+            "layout": {"type": "instant"},
         },
-        "ui_handlers": {
-            "punch_assistant": punch_assistant
-        }
+        "ui_handlers": {"punch_assistant": punch_assistant},
     },
     {
         "schema": {
@@ -928,12 +1152,8 @@ TOOLS = [
             "label": "Heal Assistant",
             "icon": "Cross",
             "type": "ui_v1",
-            "layout": {
-                "type": "instant"
-            }
+            "layout": {"type": "instant"},
         },
-        "ui_handlers": {
-            "heal_assistant": heal_assistant
-        }
-    }
+        "ui_handlers": {"heal_assistant": heal_assistant},
+    },
 ]

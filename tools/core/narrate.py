@@ -5,7 +5,7 @@ Tool for providing story narration.
 from core.tool_utils import system_chunk
 
 
-async def narrate(narration_text: str, ctx):
+async def narrate(narration_text: str):
     """Provide director's advice during the response."""
     yield system_chunk(f"[NARRATOR]\n\n{narration_text}*")
 

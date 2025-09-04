@@ -13,7 +13,7 @@ import logging
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from core.websocket import kv_websocket_manager
+from services.websocket_service import websocket_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,7 +35,7 @@ async def kv_websocket_endpoint(
 
     try:
         # Connect the client
-        connection = await kv_websocket_manager.connect(websocket, client_id)
+        await websocket_service.connect(websocket, client_id)
         logger.info(f"WebSocket connection established for client {client_id}")
     except Exception as e:
         logger.error(f"Failed to establish WebSocket connection: {e}")
@@ -76,7 +76,7 @@ async def kv_websocket_endpoint(
                 error_msg = {"type": "error", "message": "Internal server error"}
                 try:
                     await websocket.send_text(json.dumps(error_msg))
-                except:
+                except Exception:
                     logger.error(f"Failed to send error message to client {client_id}")
                     break
 
@@ -89,7 +89,7 @@ async def kv_websocket_endpoint(
         traceback.print_exc()
     finally:
         logger.info(f"Cleaning up connection for client {client_id}")
-        await kv_websocket_manager.disconnect(client_id)
+        await websocket_service.disconnect(client_id)
 
 
 async def handle_client_message(client_id: str, message: Dict[str, Any]):
@@ -115,7 +115,7 @@ async def handle_client_message(client_id: str, message: Dict[str, Any]):
             "type": "error",
             "message": f"Unknown message type: {message_type}",
         }
-        await kv_websocket_manager.send_to_client(client_id, error_msg)
+        await websocket_service.send_to_client(client_id, error_msg)
 
 
 async def handle_subscribe(client_id: str, message: Dict[str, Any]):
@@ -128,13 +128,13 @@ async def handle_subscribe(client_id: str, message: Dict[str, Any]):
     if not topics:
         logger.info(f"🌍 Client {client_id} subscribing to ALL KV changes")
         # Subscribe to a special "all" topic
-        success = await kv_websocket_manager.subscribe(client_id, "*")
+        success = await websocket_service.subscribe(client_id, "*")
         response = {
             "type": "subscribe_response",
             "successful": ["*"] if success else [],
             "failed": [] if success else ["*"],
         }
-        await kv_websocket_manager.send_to_client(client_id, response)
+        await websocket_service.send_to_client(client_id, response)
         return
 
     logger.info(f"🎯 Client {client_id} subscribing to specific topics: {topics}")
@@ -144,7 +144,7 @@ async def handle_subscribe(client_id: str, message: Dict[str, Any]):
 
     for topic in topics:
         if isinstance(topic, str):
-            success = await kv_websocket_manager.subscribe(client_id, topic)
+            success = await websocket_service.subscribe(client_id, topic)
             if success:
                 successful_subscriptions.append(topic)
                 logger.info(f"✅ Client {client_id} successfully subscribed to {topic}")
@@ -164,7 +164,7 @@ async def handle_subscribe(client_id: str, message: Dict[str, Any]):
         "successful": successful_subscriptions,
         "failed": failed_subscriptions,
     }
-    await kv_websocket_manager.send_to_client(client_id, response)
+    await websocket_service.send_to_client(client_id, response)
 
 
 async def handle_unsubscribe(client_id: str, message: Dict[str, Any]):
@@ -178,7 +178,7 @@ async def handle_unsubscribe(client_id: str, message: Dict[str, Any]):
             "type": "error",
             "message": "No topics specified for unsubscription",
         }
-        await kv_websocket_manager.send_to_client(client_id, error_msg)
+        await websocket_service.send_to_client(client_id, error_msg)
         return
 
     successful_unsubscriptions = []
@@ -186,7 +186,7 @@ async def handle_unsubscribe(client_id: str, message: Dict[str, Any]):
 
     for topic in topics:
         if isinstance(topic, str):
-            success = await kv_websocket_manager.unsubscribe(client_id, topic)
+            success = await websocket_service.unsubscribe(client_id, topic)
             if success:
                 successful_unsubscriptions.append(topic)
             else:
@@ -200,15 +200,15 @@ async def handle_unsubscribe(client_id: str, message: Dict[str, Any]):
         "successful": successful_unsubscriptions,
         "failed": failed_unsubscriptions,
     }
-    await kv_websocket_manager.send_to_client(client_id, response)
+    await websocket_service.send_to_client(client_id, response)
 
 
 async def handle_list_subscriptions(client_id: str):
     """Handle requests to list current subscriptions."""
-    subscriptions = kv_websocket_manager.get_client_subscriptions(client_id)
+    subscriptions = websocket_service.get_client_subscriptions(client_id)
 
     response = {"type": "subscriptions_list", "topics": list(subscriptions)}
-    await kv_websocket_manager.send_to_client(client_id, response)
+    await websocket_service.send_to_client(client_id, response)
 
 
 async def handle_ping(client_id: str, message: Dict[str, Any]):
@@ -218,4 +218,4 @@ async def handle_ping(client_id: str, message: Dict[str, Any]):
         "timestamp": asyncio.get_event_loop().time(),
         "original_message": message.get("data"),
     }
-    await kv_websocket_manager.send_to_client(client_id, pong_response)
+    await websocket_service.send_to_client(client_id, pong_response)

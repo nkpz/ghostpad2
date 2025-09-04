@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
         
         # Start shared KV watcher with configured polling interval
         logger.info(f"Starting shared KV watcher (poll: {settings.kv_watcher_poll_ms}ms)...")
-        await state_service.start_kv_watcher(settings.kv_watcher_poll_ms)
+        state_service.start_kv_watcher(settings.kv_watcher_poll_ms)
         
         logger.info("Application startup complete")
         
@@ -88,10 +88,6 @@ async def lifespan(app: FastAPI):
         # Cancel condition checking task
         if 'condition_task' in locals():
             condition_task.cancel()
-            try:
-                await condition_task
-            except asyncio.CancelledError:
-                pass
         
         # Stop shared KV watcher
         logger.info("Stopping shared KV watcher...")

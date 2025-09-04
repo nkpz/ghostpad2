@@ -8,7 +8,6 @@ async def set_guidance(value: str):
     """Set guidance text to be injected into the next response."""
     print(f"Setting guidance to: {value}")
     await kv_store.set(KEY, value or "")
-    return
 
 
 async def check_guidance():

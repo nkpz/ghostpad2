@@ -55,7 +55,6 @@ class SamplingSettings(BaseModel):
     frequency_penalty: float = 0.0
     presence_penalty: float = 0.0
     seed: Optional[int] = None
-    top_k: Optional[int] = None
 
 class SamplingResponse(BaseModel):
     temperature: float
@@ -64,14 +63,13 @@ class SamplingResponse(BaseModel):
     frequency_penalty: float
     presence_penalty: float
     seed: Optional[int] = None
-    top_k: Optional[int] = None
 
 class UserDescriptionSettings(BaseModel):
-    user_description: str = None
+    user_description: Optional[str] = None
     user_name: str = "User"
 
 class UserDescriptionResponse(BaseModel):
-    user_description: str = None
+    user_description: Optional[str] = None
     user_name: str = "User"
 
 class PromptEditRequest(BaseModel):
@@ -112,7 +110,7 @@ async def save_openai_settings(settings: OpenAISettings):
 async def test_openai_connection(settings: OpenAISettings):
     """Test connection to OpenAI API and return available models"""
     try:
-        result = await ai_service.test_connection(settings.base_url, settings.api_key)
+        result = ai_service.test_connection(settings.base_url, settings.api_key)
         return ConnectionTestResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Connection test failed: {str(e)}")
@@ -190,7 +188,6 @@ async def save_sampling_settings(settings: SamplingSettings):
             frequency_penalty=settings.frequency_penalty,
             presence_penalty=settings.presence_penalty,
             seed=settings.seed,
-            top_k=settings.top_k
         )
         return SamplingResponse(**saved_settings)
     except Exception as e:

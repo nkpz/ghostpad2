@@ -1,5 +1,6 @@
 from services.ai_service import ai_service
 from services.kv_store_service import kv_store
+from utils.constants import ERROR_NO_OPENAI_API_KEY
 import openai
 
 
@@ -13,7 +14,7 @@ async def visit_url(params):
     try:
         ai_settings = await ai_service.get_openai_settings()
         if not ai_settings["api_key"]:
-            return {"success": False, "error": "OpenAI API key not configured"}
+            return {"success": False, "error": ERROR_NO_OPENAI_API_KEY}
 
         # Create prompt for web page simulation
         prompt = f"""You are simulating a web browser visiting the URL: {url}

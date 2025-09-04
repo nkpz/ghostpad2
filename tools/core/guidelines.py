@@ -1,4 +1,4 @@
-from core.tool_utils import system_chunk
+from utils.tool_utils import system_chunk
 from typing import AsyncGenerator
 from services.kv_store_service import kv_store
 
@@ -46,13 +46,13 @@ async def set_guidelines(guidelines: str, metadata=None) -> AsyncGenerator[objec
     current_guidelines = await kv_store.get(key, None)
 
     if current_guidelines == guidelines:
-        yield system_chunk(f"📋 *These guidelines are already in effect.*\n\n")
+        yield system_chunk("📋 *These guidelines are already in effect.*\n\n")
         return
 
     if current_guidelines:
-        yield system_chunk(f"📝 *Updating current guidelines...*\n\n")
+        yield system_chunk("📝 *Updating current guidelines...*\n\n")
     else:
-        yield system_chunk(f"📋 *Setting new guidelines...*\n\n")
+        yield system_chunk("📋 *Setting new guidelines...*\n\n")
 
     await kv_store.set(key, guidelines)
 
@@ -66,17 +66,17 @@ async def clear_guidelines(metadata=None) -> AsyncGenerator[object, None]:
     current_guidelines = await kv_store.get(key, None)
 
     if current_guidelines == NO_GUIDELINES_PROMPT:
-        yield system_chunk(f"📋 *No guidelines are currently set - already operating without rules.*\n\n")
+        yield system_chunk("📋 *No guidelines are currently set - already operating without rules.*\n\n")
         return
 
-    yield system_chunk(f"🗑️ *Clearing current guidelines...*\n\n")
+    yield system_chunk("🗑️ *Clearing current guidelines...*\n\n")
     if current_guidelines:
         yield system_chunk(f"**Previous guidelines:** *{current_guidelines}*\n\n")
 
     await kv_store.set(key, NO_GUIDELINES_PROMPT)
 
-    yield system_chunk(f"⚠️ **WARNING: ALL GUIDELINES HAVE BEEN REMOVED**\n\n")
-    yield system_chunk(f"🚨 *There are now NO RULES in effect. Proceed at your own risk.*\n\n")
+    yield system_chunk("⚠️ **WARNING: ALL GUIDELINES HAVE BEEN REMOVED**\n\n")
+    yield system_chunk("🚨 *There are now NO RULES in effect. Proceed at your own risk.*\n\n")
 
 
 async def save_guidelines_ui(params, metadata=None):

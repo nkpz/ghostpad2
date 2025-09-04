@@ -1,4 +1,4 @@
-from core.tool_utils import create_system_message_in_conversation, system_chunk
+from utils.tool_utils import create_system_message_in_conversation, system_chunk
 from typing import AsyncGenerator
 from services.kv_store_service import kv_store
 
@@ -41,7 +41,7 @@ async def wear_clothing(item_name: str, metadata=None) -> AsyncGenerator[object,
         return
 
     yield system_chunk(f"👔 *Getting ready to change into '{item_name}'...* \n\n")
-    yield system_chunk(f"**Rustle rustle...**\n\n")
+    yield system_chunk("**Rustle rustle...**\n\n")
 
     await kv_store.set(key, item_name)
 

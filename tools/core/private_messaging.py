@@ -1,7 +1,6 @@
 from services.kv_store_service import kv_store
 
 DEFAULT_USER_NAME = "System Administrators"
-RESPOND_TO_FN = f"respond_to_private_messages"
 USER_NAME_KEY = "private_messaging_user_name"
 
 
@@ -27,10 +26,8 @@ async def check_private_messages():
 
 async def respond_to_administrators(response_message: str, original_topic: str = None):
     key = "private_chat"
-    original_topic_section = f" (Regarding {original_topic})" if original_topic else ""
     msg = f"[[char]]: {response_message}"
     await kv_store.rpush(key, msg)
-    return
 
 
 async def send_private_message(params):
@@ -76,7 +73,7 @@ TOOLS = [
         "function": respond_to_administrators,
         "one_time": True,
         "schema": {
-            "name": RESPOND_TO_FN,
+            "name": "respond_to_private_messages",
             "description": "Respond privately via private message. Only use this tool for private replies and DO NOT share details of the private chat publicly. Remember, this tool is for confidential communications only.",
             "parameters": {
                 "type": "object",

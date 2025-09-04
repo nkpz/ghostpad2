@@ -41,7 +41,7 @@ def _normalize_name(name: str) -> str:
     n = "-".join(n.split())
     return n
 
-async def send_money(sender: str, recipient: str, amount: int, ctx=None, user_requested=False) -> AsyncGenerator[object, None]:
+async def send_money(sender: str, recipient: str, amount: int, user_requested=False) -> AsyncGenerator[object, None]:
     """
     Send money from sender to recipient. Both sender and recipient are full names.
     Sender and recipient can be the special identifier 'user' to refer to the human user.
@@ -96,7 +96,7 @@ async def send_money(sender: str, recipient: str, amount: int, ctx=None, user_re
     yield system_chunk(f"💵 [Transaction Successful] {sender} sent ${amount} to {recipient}.\n\n")
 
 
-async def steal_money(thief: str, victim: str, amount: int, ctx=None) -> AsyncGenerator[object, None]:
+async def steal_money(thief: str, victim: str, amount: int) -> AsyncGenerator[object, None]:
     """
     Steal money from victim to thief. Both thief and victim are full names.
     Thief and victim can be the special identifier 'user' to refer to the human user.

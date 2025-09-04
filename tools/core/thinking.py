@@ -2,14 +2,13 @@
 Tool for expressing internal thoughts during responses.
 """
 
-from core.tool_utils import system_chunk
+from utils.tool_utils import system_chunk
 from typing import AsyncGenerator
 
 
 async def think(thoughts: str) -> AsyncGenerator[object, None]:
     """Express internal thoughts during the response."""
     yield system_chunk(f"💭 *[[char]] thinks: {thoughts}*\n\n")
-    return
 
 
 TOOLS = [

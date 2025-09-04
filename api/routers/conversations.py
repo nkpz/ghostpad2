@@ -6,7 +6,7 @@ Handles conversation CRUD operations, message retrieval, and persona management.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from services.conversation_service import conversation_service
 
@@ -14,7 +14,7 @@ router = APIRouter()
 
 # Pydantic models
 class ConversationCreate(BaseModel):
-    title: str = None
+    title: Optional[str] = None
     persona_ids: List[int] | None = None
 
 class ConversationResponse(BaseModel):
