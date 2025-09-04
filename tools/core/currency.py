@@ -1,12 +1,7 @@
-from db.database import get_db_session_context
-from db.kv_store import get_kv_store
-from db.models import Persona
+from services.kv_store_service import kv_store
 from services.persona_service import persona_service
 from core.tool_utils import system_chunk
 from typing import AsyncGenerator
-from sqlalchemy import select
-
-db = get_kv_store()
 
 USER_BALANCE_KEY = "balance-user"
 ASSISTANT_BALANCE_PREFIX = "balance-"
@@ -19,7 +14,7 @@ async def report_balances(conversation_id: str = None):
     balances = {}
 
     # Get user balance
-    user_balance = await db.get(USER_BALANCE_KEY, 1000)
+    user_balance = await kv_store.get(USER_BALANCE_KEY, 1000)
     balances["user"] = user_balance
 
     # Get assistant balances (use normalized persona names as keys)
@@ -28,7 +23,7 @@ async def report_balances(conversation_id: str = None):
         if persona_names:
             for name in persona_names:
                 norm = _normalize_name(name)
-                val = await db.get(f"{ASSISTANT_BALANCE_PREFIX}{norm}", 1000)
+                val = await kv_store.get(f"{ASSISTANT_BALANCE_PREFIX}{norm}", 1000)
                 balances[name] = val
 
     # Format for AI model
@@ -45,38 +40,6 @@ def _normalize_name(name: str) -> str:
     n = name.strip().lower()
     n = "-".join(n.split())
     return n
-
-
-async def get_balances_for_ui(persona_ids: str = None):
-    """
-    Get currency balances formatted for UI consumption.
-    """
-    balances = {}
-
-    # Get user balance
-    user_balance = await db.get(USER_BALANCE_KEY, 1000)
-    balances["user"] = user_balance
-
-    # Get assistant balances using persona IDs
-    if persona_ids:
-        persona_id_list = [pid.strip()
-                           for pid in persona_ids.split(",") if pid.strip()]
-        if persona_id_list:
-            # Get persona names from IDs
-
-            async with get_db_session_context() as session:
-                result = await session.execute(
-                    select(Persona.name).where(Persona.id.in_(persona_id_list))
-                )
-                persona_names = [row[0] for row in result.fetchall()]
-
-                for name in persona_names:
-                    norm = _normalize_name(name)
-                    val = await db.get(f"{ASSISTANT_BALANCE_PREFIX}{norm}", 1000)
-                    balances[f"assistant_{norm}"] = val
-
-    return {"type": "currency", "balances": balances}
-
 
 async def send_money(sender: str, recipient: str, amount: int, ctx=None, user_requested=False) -> AsyncGenerator[object, None]:
     """
@@ -112,7 +75,7 @@ async def send_money(sender: str, recipient: str, amount: int, ctx=None, user_re
     recipient_key = USER_BALANCE_KEY if recipient_norm == "user" else f"{ASSISTANT_BALANCE_PREFIX}{recipient_norm}"
 
     # Load balances (default 1000)
-    sender_balance = await db.get(sender_key, 1000)
+    sender_balance = await kv_store.get(sender_key, 1000)
     if sender_balance is None:
         sender_balance = 1000
 
@@ -120,15 +83,15 @@ async def send_money(sender: str, recipient: str, amount: int, ctx=None, user_re
         yield system_chunk(f"❌ [Transaction Failed] {sender} has insufficient funds.\n\n")
         return
 
-    recipient_balance = await db.get(recipient_key, 1000)
+    recipient_balance = await kv_store.get(recipient_key, 1000)
     if recipient_balance is None:
         recipient_balance = 1000
 
     sender_balance -= amount
     recipient_balance += amount
 
-    await db.set(sender_key, sender_balance)
-    await db.set(recipient_key, recipient_balance)
+    await kv_store.set(sender_key, sender_balance)
+    await kv_store.set(recipient_key, recipient_balance)
 
     yield system_chunk(f"💵 [Transaction Successful] {sender} sent ${amount} to {recipient}.\n\n")
 
@@ -160,11 +123,11 @@ async def steal_money(thief: str, victim: str, amount: int, ctx=None) -> AsyncGe
     victim_key = USER_BALANCE_KEY if victim_norm == "user" else f"{ASSISTANT_BALANCE_PREFIX}{victim_norm}"
 
     # Load balances (default 1000)
-    thief_balance = await db.get(thief_key, 1000)
+    thief_balance = await kv_store.get(thief_key, 1000)
     if thief_balance is None:
         thief_balance = 1000
 
-    victim_balance = await db.get(victim_key, 1000)
+    victim_balance = await kv_store.get(victim_key, 1000)
     if victim_balance is None:
         victim_balance = 1000
 
@@ -176,8 +139,8 @@ async def steal_money(thief: str, victim: str, amount: int, ctx=None) -> AsyncGe
     thief_balance += amount
     victim_balance -= amount
 
-    await db.set(thief_key, thief_balance)
-    await db.set(victim_key, victim_balance)
+    await kv_store.set(thief_key, thief_balance)
+    await kv_store.set(victim_key, victim_balance)
 
     yield system_chunk(f"💵 [Theft Successful] {thief} has hacked into {victim}'s account and stolen ${amount}!\n\n")
 

@@ -1,0 +1,97 @@
+##############################
+# OS / Editor
+##############################
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+##############################
+# Environment files
+##############################
+.env
+.env.*
+!.env.example
+!.env.local.example
+.python-version
+
+##############################
+# Python
+##############################
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging / build artifacts
+build/
+dist/
+wheels/
+share/python-wheels/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+.installed.cfg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage / caches
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.ruff_cache/
+.cache/
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+##############################
+# Databases (SQLite, etc.)
+##############################
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+*.db
+*.db-wal
+*.db-shm
+
+# Project local databases
+conversations.db
+data.db
+
+##############################
+# Node / Frontend (Vite + TS)
+##############################
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.vite/
+frontend/.vite/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+##############################
+# Misc temp
+##############################
+tmp/
+temp/
+logs/
+log/

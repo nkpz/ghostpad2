@@ -1,25 +1,23 @@
-from db.kv_store import get_kv_store
+from services.kv_store_service import kv_store
 
 DEFAULT_USER_NAME = "System Administrators"
 RESPOND_TO_FN = f"respond_to_private_messages"
 USER_NAME_KEY = "private_messaging_user_name"
 
-db = get_kv_store()
-
 
 async def get_user_name() -> str:
     """Get the configured user name for private messaging."""
-    user_name = await db.get(USER_NAME_KEY, DEFAULT_USER_NAME)
+    user_name = await kv_store.get(USER_NAME_KEY, DEFAULT_USER_NAME)
     return user_name or DEFAULT_USER_NAME
 
 
 async def check_private_messages():
-    has_any = (await db.llen("private_chat")) > 0
+    has_any = (await kv_store.llen("private_chat")) > 0
     if not has_any:
         return ""
 
     user_name = await get_user_name()
-    messages = await db.lrange("private_chat", -2, -1)
+    messages = await kv_store.lrange("private_chat", -2, -1)
     formatted = "\n".join(
         (msg if ":" in msg[:20] or msg[0] == "*" else f"{user_name}: {msg}")
         for msg in messages
@@ -31,7 +29,7 @@ async def respond_to_administrators(response_message: str, original_topic: str =
     key = "private_chat"
     original_topic_section = f" (Regarding {original_topic})" if original_topic else ""
     msg = f"[[char]]: {response_message}"
-    await db.rpush(key, msg)
+    await kv_store.rpush(key, msg)
     return
 
 
@@ -45,7 +43,7 @@ async def send_private_message(params):
         user_name = await get_user_name()
         # Add sender prefix and store in KV
         formatted_message = f"{user_name}: {message}"
-        await db.rpush("private_chat", formatted_message)
+        await kv_store.rpush("private_chat", formatted_message)
 
         return {
             "success": True,
@@ -60,13 +58,13 @@ async def send_private_message(params):
 async def save_user_name_ui(params):
     """UI handler for saving user name via ui_v1 interface"""
     user_name = params.get("user_name_input", "").strip()
-    
+
     try:
         if not user_name:
-            await db.set(USER_NAME_KEY, DEFAULT_USER_NAME)
+            await kv_store.set(USER_NAME_KEY, DEFAULT_USER_NAME)
             return {"success": True, "message": "User name reset to default"}
         else:
-            await db.set(USER_NAME_KEY, user_name)
+            await kv_store.set(USER_NAME_KEY, user_name)
             return {"success": True, "message": "User name updated"}
 
     except Exception as e:
@@ -135,11 +133,11 @@ TOOLS = [
                         "type": "text_input",
                         "data_source": {
                             "type": "kv_store",
-                            "key": "private_messaging_user_name"
+                            "key": "private_messaging_user_name",
                         },
                         "props": {
                             "placeholder": f"Sender name (default: {DEFAULT_USER_NAME})",
-                        }
+                        },
                     },
                     {
                         "id": "save_name_button",
@@ -195,7 +193,7 @@ TOOLS = [
         },
         "ui_handlers": {
             "send_private_message": send_private_message,
-            "save_user_name_ui": save_user_name_ui
+            "save_user_name_ui": save_user_name_ui,
         },
     },
 ]

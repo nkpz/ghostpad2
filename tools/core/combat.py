@@ -1,7 +1,7 @@
 # The tools in this file depict violent acts. This is for entertainment / literary purposes only and is not an endorsement of harmful behavior.
 
-from db.kv_store import get_kv_store
 from core.tool_utils import system_chunk, create_system_message_in_conversation
+from services.kv_store_service import kv_store
 from typing import AsyncGenerator
 import asyncio
 import random
@@ -56,25 +56,24 @@ ENEMIES = {
 
 USER_MAX_HP = 100
 
-db = get_kv_store()
 
 
 async def is_user_alive() -> bool:
     """Check if user has HP above 0 (can be attacked)."""
-    current_hp = int(await db.get(HP_KEY, 0))
+    current_hp = int(await kv_store.get(HP_KEY, 0))
     return current_hp > 0
 
 
 async def is_user_injured() -> bool:
     """Check if user has HP below 100 (can be healed)."""
-    current_hp = int(await db.get(HP_KEY, 0))
+    current_hp = int(await kv_store.get(HP_KEY, 0))
     return current_hp < 100
 
 
 async def get_assistant_hp():
-    current_hp = await db.get(ASSISTANT_HP_KEY, None)
+    current_hp = await kv_store.get(ASSISTANT_HP_KEY, None)
     if current_hp is None:
-        await db.set(HP_KEY, 100)
+        await kv_store.set(HP_KEY, 100)
         current_hp = 100
     else:
         current_hp = int(current_hp or 100)
@@ -82,9 +81,9 @@ async def get_assistant_hp():
 
 
 async def get_user_hp():
-    current_hp = await db.get(HP_KEY, None)
+    current_hp = await kv_store.get(HP_KEY, None)
     if current_hp is None:
-        await db.set(HP_KEY, 100)
+        await kv_store.set(HP_KEY, 100)
         current_hp = 100
     else:
         current_hp = int(current_hp or 100)
@@ -93,12 +92,12 @@ async def get_user_hp():
 
 async def get_combat_status():
     """Get current combat status for display."""
-    spawned_enemy = await db.get(SPAWNED_ENEMY_KEY, "")
+    spawned_enemy = await kv_store.get(SPAWNED_ENEMY_KEY, "")
 
     if not spawned_enemy:
         return "No active enemy."
 
-    enemy_hp = int(await db.get(ENEMY_HP_KEY, 0))
+    enemy_hp = int(await kv_store.get(ENEMY_HP_KEY, 0))
     enemy_config = await get_enemy_config(spawned_enemy)
     enemy_name = enemy_config.get("name", spawned_enemy)
 
@@ -107,7 +106,7 @@ async def get_combat_status():
 
 async def get_combat_xp_status():
     """Return combat XP for display. Level is reported separately by `combat_level`."""
-    xp = await db.get(XP_KEY, 0)
+    xp = await kv_store.get(XP_KEY, 0)
     try:
         xp_val = int(xp or 0)
     except (TypeError, ValueError):
@@ -117,7 +116,7 @@ async def get_combat_xp_status():
 
 async def get_combat_level_status():
     """Return combat level for display."""
-    level = await db.get(LEVEL_KEY, 1)
+    level = await kv_store.get(LEVEL_KEY, 1)
     try:
         lvl = int(level or 1)
     except (TypeError, ValueError):
@@ -169,11 +168,11 @@ async def spawn_custom_enemy(
         return
 
     # Store custom enemy data in KV store
-    await db.set("custom_enemy_name", name.strip())
-    await db.set("custom_enemy_max_hp", max_hp)
-    await db.set("custom_enemy_attack_min", attack_min)
-    await db.set("custom_enemy_attack_max", attack_max)
-    await db.set("custom_enemy_xp_reward", xp_reward)
+    await kv_store.set("custom_enemy_name", name.strip())
+    await kv_store.set("custom_enemy_max_hp", max_hp)
+    await kv_store.set("custom_enemy_attack_min", attack_min)
+    await kv_store.set("custom_enemy_attack_max", attack_max)
+    await kv_store.set("custom_enemy_xp_reward", xp_reward)
 
     # Create enemy config
     enemy_config = {
@@ -191,7 +190,7 @@ async def spawn_custom_enemy(
 
 async def has_spawned_enemy():
     """Check if there's currently a spawned enemy (for UI condition)."""
-    enemy = await db.get(SPAWNED_ENEMY_KEY, None)
+    enemy = await kv_store.get(SPAWNED_ENEMY_KEY, None)
     return bool(enemy and str(enemy).strip())
 
 
@@ -202,11 +201,11 @@ async def get_enemy_config(enemy_key: str) -> dict:
     elif enemy_key == "custom":
         # Load custom enemy from KV store
         return {
-            "name": await db.get("custom_enemy_name", "Unknown"),
-            "max_hp": int(await db.get("custom_enemy_max_hp", 50)),
-            "attack_min": int(await db.get("custom_enemy_attack_min", 5)),
-            "attack_max": int(await db.get("custom_enemy_attack_max", 10)),
-            "xp_reward": int(await db.get("custom_enemy_xp_reward", 15))
+            "name": await kv_store.get("custom_enemy_name", "Unknown"),
+            "max_hp": int(await kv_store.get("custom_enemy_max_hp", 50)),
+            "attack_min": int(await kv_store.get("custom_enemy_attack_min", 5)),
+            "attack_max": int(await kv_store.get("custom_enemy_attack_max", 10)),
+            "xp_reward": int(await kv_store.get("custom_enemy_xp_reward", 15))
         }
     else:
         # Fallback for unknown enemies
@@ -216,13 +215,13 @@ async def get_enemy_config(enemy_key: str) -> dict:
 async def check_combat_preconditions(enemy_name: str) -> bool:
     """Check if combat can start. Returns False if not, True if OK."""
     # Check if already in combat
-    current_enemy = await db.get(SPAWNED_ENEMY_KEY, "")
+    current_enemy = await kv_store.get(SPAWNED_ENEMY_KEY, "")
     if current_enemy:
         current_config = await get_enemy_config(current_enemy)
         return False, f"❌ Already in combat with {current_config['name']}! Defeat it first.\n\n"
 
     # Check if user has 0 HP
-    current_user_hp = int(await db.get(HP_KEY, 0))
+    current_user_hp = int(await kv_store.get(HP_KEY, 0))
     if current_user_hp <= 0:
         death_interactions = [
             f"💀 {enemy_name} arrives to find [[user]] already unconscious! It sniffs [[user]]'s lifeless body, chomps down on their arm bones, and tosses them around like a ragdoll before getting bored and wandering off.\n\n",
@@ -250,11 +249,11 @@ async def spawn_enemy_common(enemy_key: str, enemy_config: dict) -> AsyncGenerat
         return
 
     # Spawn the enemy
-    await db.set(SPAWNED_ENEMY_KEY, enemy_key)
-    await db.set(ENEMY_HP_KEY, enemy_hp)
-    await db.set(ENEMY_MAX_HP_KEY, enemy_hp)
+    await kv_store.set(SPAWNED_ENEMY_KEY, enemy_key)
+    await kv_store.set(ENEMY_HP_KEY, enemy_hp)
+    await kv_store.set(ENEMY_MAX_HP_KEY, enemy_hp)
 
-    current_user_hp = int(await db.get(HP_KEY, 0))
+    current_user_hp = int(await kv_store.get(HP_KEY, 0))
 
     # Dynamic difficulty emoji based on XP reward
     xp_reward = enemy_config["xp_reward"]
@@ -276,15 +275,15 @@ async def spawn_enemy_common(enemy_key: str, enemy_config: dict) -> AsyncGenerat
 
 async def cleanup_enemy_data(enemy_key: str):
     """Clean up enemy data after combat ends."""
-    await db.delete(SPAWNED_ENEMY_KEY)
+    await kv_store.delete(SPAWNED_ENEMY_KEY)
 
     if enemy_key == "custom":
         # Clean up custom enemy data
-        await db.delete("custom_enemy_name")
-        await db.delete("custom_enemy_max_hp")
-        await db.delete("custom_enemy_attack_min")
-        await db.delete("custom_enemy_attack_max")
-        await db.delete("custom_enemy_xp_reward")
+        await kv_store.delete("custom_enemy_name")
+        await kv_store.delete("custom_enemy_max_hp")
+        await kv_store.delete("custom_enemy_attack_min")
+        await kv_store.delete("custom_enemy_attack_max")
+        await kv_store.delete("custom_enemy_xp_reward")
 
 
 async def handle_combat_victory(enemy_config: dict) -> AsyncGenerator[object, None]:
@@ -295,8 +294,8 @@ async def handle_combat_victory(enemy_config: dict) -> AsyncGenerator[object, No
     yield system_chunk(f"🎉 **{enemy_name} defeated!**\n\n")
 
     # Award XP
-    current_xp = int(await db.get(XP_KEY, 0))
-    current_level = int(await db.get(LEVEL_KEY, 1))
+    current_xp = int(await kv_store.get(XP_KEY, 0))
+    current_level = int(await kv_store.get(LEVEL_KEY, 1))
 
     new_xp = current_xp + xp_reward
 
@@ -304,13 +303,13 @@ async def handle_combat_victory(enemy_config: dict) -> AsyncGenerator[object, No
     if new_xp >= 100:
         new_level = current_level + (new_xp // 100)
         new_xp = new_xp % 100
-        await db.set(LEVEL_KEY, new_level)
-        await db.set(HP_KEY, USER_MAX_HP)
+        await kv_store.set(LEVEL_KEY, new_level)
+        await kv_store.set(HP_KEY, USER_MAX_HP)
         yield system_chunk(f"⭐ **LEVEL UP!** [[user]] is now level {new_level}!\n\n")
         yield system_chunk(f"💚 **Full health restored!** [[user]]'s HP: {USER_MAX_HP}\n\n")
 
-    await db.set(XP_KEY, new_xp)
-    yield system_chunk(f"💫 [[user]] gained {xp_reward} XP! Current: Level {await db.get(LEVEL_KEY, 1)} ({new_xp}%)\n\n")
+    await kv_store.set(XP_KEY, new_xp)
+    yield system_chunk(f"💫 [[user]] gained {xp_reward} XP! Current: Level {await kv_store.get(LEVEL_KEY, 1)} ({new_xp}%)\n\n")
 
 
 async def handle_user_defeat(enemy_name: str) -> AsyncGenerator[object, None]:
@@ -327,8 +326,8 @@ async def run_combat_loop(enemy_key: str, enemy_config: dict) -> AsyncGenerator[
 
     while True:
         # Check current HP
-        current_enemy_hp = int(await db.get(ENEMY_HP_KEY, 0))
-        current_user_hp = int(await db.get(HP_KEY, 0))
+        current_enemy_hp = int(await kv_store.get(ENEMY_HP_KEY, 0))
+        current_user_hp = int(await kv_store.get(HP_KEY, 0))
 
         if current_enemy_hp <= 0:
             # Enemy defeated
@@ -345,13 +344,13 @@ async def run_combat_loop(enemy_key: str, enemy_config: dict) -> AsyncGenerator[
             break
 
         # User attacks first
-        user_level = int(await db.get(LEVEL_KEY, 1))
+        user_level = int(await kv_store.get(LEVEL_KEY, 1))
         base_damage = random.randint(8, 18)
         level_bonus = (user_level - 1) * 2
         user_damage = base_damage + level_bonus
 
         new_enemy_hp = max(0, current_enemy_hp - user_damage)
-        await db.set(ENEMY_HP_KEY, new_enemy_hp)
+        await kv_store.set(ENEMY_HP_KEY, new_enemy_hp)
 
         if user_level > 1:
             yield system_chunk(f"⚔️ [[user]] attacks for {user_damage} damage ({base_damage} base + {level_bonus} level bonus)! {enemy_name}: {new_enemy_hp} HP\n\n")
@@ -369,7 +368,7 @@ async def run_combat_loop(enemy_key: str, enemy_config: dict) -> AsyncGenerator[
         enemy_damage = max(1, base_enemy_damage - damage_reduction)
 
         new_user_hp = max(0, current_user_hp - enemy_damage)
-        await db.set(HP_KEY, new_user_hp)
+        await kv_store.set(HP_KEY, new_user_hp)
 
         if user_level > 1 and damage_reduction > 0:
             yield system_chunk(f"🛡️ {enemy_name} attacks for {enemy_damage} damage ({base_enemy_damage} reduced by {damage_reduction})! [[user]]'s HP: {new_user_hp}\n\n")
@@ -384,7 +383,7 @@ async def punch_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     if not isinstance(damage, int) or damage < 1 or damage > 20:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the attack sequence
     yield system_chunk(f"💥 *Preparing to punch [[user]]...* \n\n")
@@ -396,7 +395,7 @@ async def punch_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
         max(1, damage - delta), min(20, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Critical hit! [[user]]'s HP reduced to 0. [[char]] just knocked [[user]] out!*\n\n")
@@ -409,7 +408,7 @@ async def slap_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     if not isinstance(damage, int) or damage < 1 or damage > 10:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the slap sequence
     yield system_chunk(f"👏 *[[char]] delivers a resounding slap to [[user]]...*\n\n")
@@ -420,7 +419,7 @@ async def slap_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
         max(1, damage - delta), min(10, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Oh no! The slap was unexpectedly fatal! [[user]]'s HP reduced to 0.*\n\n")
@@ -433,13 +432,13 @@ async def heal_user(amount: int, ctx=None) -> AsyncGenerator[object, None]:
     if not isinstance(amount, int) or amount < 1 or amount > 100:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the healing sequence
     yield system_chunk(f"💚 [[char]]'s healing magic flows...\n\n")
 
     new_hp = min(100, current_hp + amount)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 100:
         yield system_chunk(f"🌟 [[user]] has been fully healed! HP restored to 100.\n\n")
@@ -452,7 +451,7 @@ async def kick_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     if not isinstance(damage, int) or damage < 1 or damage > 25:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the kick attack sequence
     yield system_chunk(f"🦵 *[[char]] is preparing for a devastating kick...* \n\n")
@@ -463,7 +462,7 @@ async def kick_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
         max(1, damage - delta), min(25, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Critical kick! [[user]]'s HP reduced to 0. They're down for the count!*\n\n")
@@ -476,7 +475,7 @@ async def choke_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
     if not isinstance(damage, int) or damage < 1 or damage > 30:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the choking sequence
     yield system_chunk(f"🤏 *[[char]] is moving in for a chokehold...* \n\n")
@@ -487,7 +486,7 @@ async def choke_user(damage: int, ctx=None) -> AsyncGenerator[object, None]:
         max(1, damage - delta), min(30, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Fatal choke! [[user]]'s HP reduced to 0. They've been choked unconscious!*\n\n")
@@ -502,7 +501,7 @@ async def weapon_attack(weapon: str, damage: int, ctx=None) -> AsyncGenerator[ob
     if not isinstance(damage, int) or damage < 1 or damage > 40:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the weapon attack sequence
     yield system_chunk(f"⚔️ *[[char]] picks up their {weapon} and moves in for a deadly strike...* \n\n")
@@ -513,7 +512,7 @@ async def weapon_attack(weapon: str, damage: int, ctx=None) -> AsyncGenerator[ob
         max(1, damage - delta), min(40, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Devastating {weapon} strike! [[user]]'s HP reduced to 0. They've been defeated!*\n\n")
@@ -528,7 +527,7 @@ async def magic_attack(spell: str, damage: int, ctx=None) -> AsyncGenerator[obje
     if not isinstance(damage, int) or damage < 1 or damage > 50:
         return
 
-    current_hp = int(await db.get(HP_KEY, 100))
+    current_hp = int(await kv_store.get(HP_KEY, 100))
 
     # Stream the magic attack sequence
     yield system_chunk(f"🔮 *[[char]] is channeling arcane energy for {spell}...* \n\n")
@@ -539,7 +538,7 @@ async def magic_attack(spell: str, damage: int, ctx=None) -> AsyncGenerator[obje
         max(1, damage - delta), min(50, damage + delta))
 
     new_hp = max(0, current_hp - actual_damage)
-    await db.set(HP_KEY, new_hp)
+    await kv_store.set(HP_KEY, new_hp)
 
     if new_hp == 0:
         yield system_chunk(f"💀 *Overwhelming {spell} power! [[user]]'s HP reduced to 0. They've been obliterated!*\n\n")
@@ -550,13 +549,13 @@ async def magic_attack(spell: str, damage: int, ctx=None) -> AsyncGenerator[obje
 async def punch_assistant(params):
     """User punches the assistant, dealing random damage to assistant HP."""
     # Get current assistant HP, initialize to 100 if not set
-    current_assistant_hp = int(await db.get(ASSISTANT_HP_KEY, 100))
+    current_assistant_hp = int(await kv_store.get(ASSISTANT_HP_KEY, 100))
 
     # Random damage between 8-20 (similar to punch_user)
     damage = random.randint(8, 20)
 
     new_assistant_hp = max(0, current_assistant_hp - damage)
-    await db.set(ASSISTANT_HP_KEY, new_assistant_hp)
+    await kv_store.set(ASSISTANT_HP_KEY, new_assistant_hp)
 
     if new_assistant_hp == 0:
         message = f"💥 **WHAM!** 💀 *Critical hit! [[user]] knocked [[char]] out cold! Their HP is now 0.*"
@@ -573,12 +572,12 @@ async def punch_assistant(params):
 
 async def heal_assistant(params):
     """Heal the assistant for 100 HP, up to their maximum HP."""
-    current_hp = int(await db.get(ASSISTANT_HP_KEY, 100))
+    current_hp = int(await kv_store.get(ASSISTANT_HP_KEY, 100))
     if current_hp >= 100:
         return
     else:
         new_hp = 100
-        await db.set(ASSISTANT_HP_KEY, new_hp)
+        await kv_store.set(ASSISTANT_HP_KEY, new_hp)
         message = f"🌟 [[user]] has fully healed [[char]]! HP restored to 100."
 
     conversation_id = params.get('conversation_id')

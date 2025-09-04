@@ -1,15 +1,13 @@
-from db.kv_store import get_kv_store
 import traceback
+from services.kv_store_service import kv_store
 
 KEY = "guidance_next_response"
-
-db = get_kv_store()
 
 
 async def set_guidance(value: str):
     """Set guidance text to be injected into the next response."""
     print(f"Setting guidance to: {value}")
-    await db.set(KEY, value or "")
+    await kv_store.set(KEY, value or "")
     return
 
 
@@ -20,10 +18,14 @@ async def check_guidance():
     The actual clearing/consuming should be done in a cleanup function after
     the full response cycle completes.
     """
-    guidance = await db.get(KEY, "") or ""
+    guidance = await kv_store.get(KEY, "") or ""
     if not guidance:
         return ""
-    return "You MUST follow the below instructions from the system administrators:\n```\n" + str(guidance) + "\n```"
+    return (
+        "You MUST follow the below instructions from the system administrators:\n```\n"
+        + str(guidance)
+        + "\n```"
+    )
 
 
 async def consume_guidance():
@@ -32,7 +34,7 @@ async def consume_guidance():
     """
     try:
         print("Consuming guidance and clearing KEY")
-        await db.set(KEY, "")
+        await kv_store.set(KEY, "")
     except Exception:
         traceback.print_exc()
     return ""
@@ -43,7 +45,7 @@ async def save_guidance_ui(params):
     guidance_text = params.get("guidance_textarea", "").strip()
 
     try:
-        await db.set(KEY, guidance_text)
+        await kv_store.set(KEY, guidance_text)
         return {"success": True, "message": "Guidance saved"}
 
     except Exception as e:
@@ -86,7 +88,7 @@ TOOLS = [
     {
         "schema": {
             "name": "Guidance UI v1",
-            "description": "Guidance interface using ui_v1 components."
+            "description": "Guidance interface using ui_v1 components.",
         },
         "ui_feature": {
             "id": "guidance_ui",
@@ -101,39 +103,32 @@ TOOLS = [
                     {
                         "id": "guidance_textarea",
                         "type": "textarea_input",
-                        "data_source": {
-                            "type": "kv_store",
-                            "key": KEY
-                        },
+                        "data_source": {"type": "kv_store", "key": KEY},
                         "props": {
                             "placeholder": "Enter guidance for the next response...",
-                            "min_height": "112px"
-                        }
+                            "min_height": "112px",
+                        },
                     },
                     {
                         "id": "button_row",
                         "type": "html_renderer",
                         "data_source": {
                             "type": "value",
-                            "value": "<div class='flex items-center gap-2 mt-4'>"
-                        }
+                            "value": "<div class='flex items-center gap-2 mt-4'>",
+                        },
                     },
                     {
                         "id": "save_button",
                         "type": "button",
-                        "props": {
-                            "label": "Save Guidance"
-                        },
+                        "props": {"label": "Save Guidance"},
                         "actions": [
                             {
                                 "type": "tool_submit",
                                 "trigger": "click",
                                 "target": "save_guidance_ui",
-                                "params": {
-                                    "guidance_textarea": "guidance_textarea"
-                                }
+                                "params": {"guidance_textarea": "guidance_textarea"},
                             }
-                        ]
+                        ],
                     },
                     {
                         "id": "library_manager",
@@ -141,25 +136,18 @@ TOOLS = [
                         "data_source": {
                             "type": "library",
                             "library_type": "guidance",
-                            "target_component_id": "guidance_textarea"
+                            "target_component_id": "guidance_textarea",
                         },
-                        "props": {
-                            "placeholder": "No saved guidance snippets."
-                        }
+                        "props": {"placeholder": "No saved guidance snippets."},
                     },
                     {
                         "id": "button_row_end",
                         "type": "html_renderer",
-                        "data_source": {
-                            "type": "value",
-                            "value": "</div>"
-                        }
-                    }
-                ]
-            }
+                        "data_source": {"type": "value", "value": "</div>"},
+                    },
+                ],
+            },
         },
-        "ui_handlers": {
-            "save_guidance_ui": save_guidance_ui
-        }
-    }
+        "ui_handlers": {"save_guidance_ui": save_guidance_ui},
+    },
 ]

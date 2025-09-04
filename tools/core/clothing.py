@@ -1,9 +1,8 @@
-from db.kv_store import get_kv_store
 from core.tool_utils import create_system_message_in_conversation, system_chunk
 from typing import AsyncGenerator
+from services.kv_store_service import kv_store
 
 DEFAULT_OUTFIT = "Casual T-shirt and Jeans"
-db = get_kv_store()
 
 
 def get_clothing_key(conversation_id: str) -> str:
@@ -18,9 +17,9 @@ async def get_equipped_clothing(conversation_id: str = None):
     
     key = get_clothing_key(conversation_id)
     # Initialize with default clothing if none exists
-    equipped = await db.get(key, None)
+    equipped = await kv_store.get(key, None)
     if equipped is None:
-        await db.set(key, DEFAULT_OUTFIT)
+        await kv_store.set(key, DEFAULT_OUTFIT)
         equipped = DEFAULT_OUTFIT
     return f"[[char]] is wearing: {equipped}"
 
@@ -35,7 +34,7 @@ async def wear_clothing(item_name: str, metadata=None) -> AsyncGenerator[object,
         return
         
     key = get_clothing_key(conversation_id)
-    current_equipped = await db.get(key, DEFAULT_OUTFIT)
+    current_equipped = await kv_store.get(key, DEFAULT_OUTFIT)
 
     if current_equipped == item_name:
         yield system_chunk(f"👕 *[[char]] is already wearing '{item_name}'!*\n\n")
@@ -44,7 +43,7 @@ async def wear_clothing(item_name: str, metadata=None) -> AsyncGenerator[object,
     yield system_chunk(f"👔 *Getting ready to change into '{item_name}'...* \n\n")
     yield system_chunk(f"**Rustle rustle...**\n\n")
 
-    await db.set(key, item_name)
+    await kv_store.set(key, item_name)
 
     yield system_chunk(f"✨ *Perfect! [[char]] is now wearing '{item_name}'!*\n\n")
 
@@ -63,7 +62,7 @@ async def save_clothing_ui(params, metadata=None):
 
     await create_system_message_in_conversation(f"👕 *poof!* [[user]] has changed [[char]]'s outfit to: {new_clothing}", conversation_id)
 
-    await db.set(key, new_clothing)
+    await kv_store.set(key, new_clothing)
 
     try:
         if not clothing_text:

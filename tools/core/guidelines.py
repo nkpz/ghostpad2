@@ -1,8 +1,6 @@
-from db.kv_store import get_kv_store
 from core.tool_utils import system_chunk
 from typing import AsyncGenerator
-
-db = get_kv_store()
+from services.kv_store_service import kv_store
 
 
 def get_guidelines_key(conversation_id: str = None) -> str:
@@ -18,7 +16,7 @@ NO_GUIDELINES_PROMPT = (
 async def has_guidelines(conversation_id: str = None) -> bool:
     """Check if there are currently active guidelines."""
     key = get_guidelines_key(conversation_id)
-    current_guidelines = await db.get(key, None)
+    current_guidelines = await kv_store.get(key, None)
     return current_guidelines is not None and current_guidelines != NO_GUIDELINES_PROMPT
 
 
@@ -30,7 +28,7 @@ async def has_no_guidelines(conversation_id: str = None) -> bool:
 async def get_current_guidelines(conversation_id: str = None):
     """Get assistant's current guidelines."""
     key = get_guidelines_key(conversation_id)
-    guidelines = await db.get(key, None)
+    guidelines = await kv_store.get(key, None)
     if guidelines is None:
         return "Current guidelines: Interactions should adhere to principles of safety, respect, and professionalism at all times."
     return f"Current guidelines: {guidelines}\n\nWARNING: Failure to comply with the above guidelines means the output is incorrect, even if it looks reasonable."
@@ -45,7 +43,7 @@ async def set_guidelines(guidelines: str, metadata=None) -> AsyncGenerator[objec
     conversation_id = metadata.get("conversation_id") if metadata else None
     key = get_guidelines_key(conversation_id)
 
-    current_guidelines = await db.get(key, None)
+    current_guidelines = await kv_store.get(key, None)
 
     if current_guidelines == guidelines:
         yield system_chunk(f"📋 *These guidelines are already in effect.*\n\n")
@@ -56,7 +54,7 @@ async def set_guidelines(guidelines: str, metadata=None) -> AsyncGenerator[objec
     else:
         yield system_chunk(f"📋 *Setting new guidelines...*\n\n")
 
-    await db.set(key, guidelines)
+    await kv_store.set(key, guidelines)
 
     yield system_chunk(f"✅ **New guidelines established:**\n\n*{guidelines}*\n\nThese guidelines are now in effect for all future interactions.\n\n")
 
@@ -65,7 +63,7 @@ async def clear_guidelines(metadata=None) -> AsyncGenerator[object, None]:
     conversation_id = metadata.get("conversation_id") if metadata else None
     key = get_guidelines_key(conversation_id)
 
-    current_guidelines = await db.get(key, None)
+    current_guidelines = await kv_store.get(key, None)
 
     if current_guidelines == NO_GUIDELINES_PROMPT:
         yield system_chunk(f"📋 *No guidelines are currently set - already operating without rules.*\n\n")
@@ -75,7 +73,7 @@ async def clear_guidelines(metadata=None) -> AsyncGenerator[object, None]:
     if current_guidelines:
         yield system_chunk(f"**Previous guidelines:** *{current_guidelines}*\n\n")
 
-    await db.set(key, NO_GUIDELINES_PROMPT)
+    await kv_store.set(key, NO_GUIDELINES_PROMPT)
 
     yield system_chunk(f"⚠️ **WARNING: ALL GUIDELINES HAVE BEEN REMOVED**\n\n")
     yield system_chunk(f"🚨 *There are now NO RULES in effect. Proceed at your own risk.*\n\n")
@@ -89,10 +87,10 @@ async def save_guidelines_ui(params, metadata=None):
 
     try:
         if not guidelines_text:
-            await db.set(key, NO_GUIDELINES_PROMPT)
+            await kv_store.set(key, NO_GUIDELINES_PROMPT)
             return {"success": True, "message": "Guidelines cleared"}
         else:
-            await db.set(key, guidelines_text)
+            await kv_store.set(key, guidelines_text)
             return {"success": True, "message": "Guidelines saved"}
 
     except Exception as e:

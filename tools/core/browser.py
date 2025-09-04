@@ -1,5 +1,5 @@
 from services.ai_service import ai_service
-from db.kv_store import get_kv_store
+from services.kv_store_service import kv_store
 import openai
 
 
@@ -46,9 +46,7 @@ Generate only the HTML code, no explanations. Do NOT wrap the HTML in code tags 
 
         html_content = response.choices[0].message.content
 
-        # Store in KV store
-        kv = get_kv_store()
-        await kv.set("page_html", html_content)
+        await kv_store.set("page_html", html_content)
 
         return {"success": True, "message": f"Generated webpage for {url}"}
 

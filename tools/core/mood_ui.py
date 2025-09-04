@@ -1,19 +1,17 @@
 from core.tool_utils import system_chunk
-from db.kv_store import get_kv_store
+from services.kv_store_service import kv_store
 from typing import AsyncGenerator
 
 # KV store key for assistant mood
 MOOD_KEY = "assistant_mood"
 
-db = get_kv_store()
-
 
 async def get_mood():
     """Get assistant's current mood."""
     # Initialize with default mood if none exists
-    current_mood = await db.get(MOOD_KEY, None)
+    current_mood = await kv_store.get(MOOD_KEY, None)
     if current_mood is None:
-        await db.set(MOOD_KEY, "Neutral")
+        await kv_store.set(MOOD_KEY, "Neutral")
         return "Neutral"
     return "Current Mood: " + current_mood
 
@@ -30,7 +28,7 @@ async def set_mood(mood: str) -> AsyncGenerator[str, None]:
     yield system_chunk(f"🎭 The assistant is now feeling {clean_mood}\n\n")
 
     # Store the mood
-    await db.set(MOOD_KEY, clean_mood)
+    await kv_store.set(MOOD_KEY, clean_mood)
 
 
 TOOLS = [
