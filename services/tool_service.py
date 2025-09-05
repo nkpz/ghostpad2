@@ -44,7 +44,6 @@ class ToolService:
                 continue
             schema = t.get("schema", {})
             name = schema.get("name")
-            print("oofie", name, t.get("function"))
             if not name:
                 continue
             if t.get("one_time") and name in tools_used:

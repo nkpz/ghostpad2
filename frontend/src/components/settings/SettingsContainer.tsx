@@ -46,7 +46,11 @@ export function SettingsContainer({
 }: Readonly<SettingsContainerProps>) {
   return (
     <Tabs defaultValue="chat" className="h-full flex flex-col">
-      <TabsList className="grid w-full grid-cols-3 mb-4">
+      <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsTrigger value="chat" className="flex flex-col items-center gap-1 py-2">
+          <MessageSquare className="h-4 w-4" />
+          <span className="text-xs">Panels</span>
+        </TabsTrigger>
         <TabsTrigger value="chat" className="flex flex-col items-center gap-1 py-2">
           <MessageSquare className="h-4 w-4" />
           <span className="text-xs">Chat</span>

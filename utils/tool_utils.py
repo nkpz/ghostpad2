@@ -23,6 +23,10 @@ def system_chunk(content: str) -> ResponseChunk:
     return ResponseChunk("system", content)
 
 
+def context_chunk(content: str) -> ResponseChunk:
+    return ResponseChunk("context", content)
+
+
 @with_db_session
 async def create_system_message_in_conversation(
     message_content: str, conversation_id: str, session

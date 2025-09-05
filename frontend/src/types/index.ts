@@ -4,7 +4,7 @@ export interface HealthStatus {
 
 export interface ChatMessage {
   id: string | number;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
   created_at: string;
   conversation_id?: string;

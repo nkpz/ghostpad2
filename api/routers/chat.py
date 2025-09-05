@@ -114,7 +114,6 @@ async def stream_chat_message(data: ChatMessageCreate):
             generator = chat_service.get_streaming_generator(
                 conversation_id, base_messages
             )
-            print("vvvLL", generator)
 
             # Stream events using SSE service for consistent formatting
             async for sse_event in sse_service.stream_service_events(

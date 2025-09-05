@@ -274,6 +274,7 @@ class ChatService:
             )
 
         system_message_content = ""
+        context_message_content = ""
 
         # Use unified inference loop
         async for event in inference_loop(
@@ -297,6 +298,10 @@ class ChatService:
             if event.get("type") == "system_chunk":
                 content = event.get("content", "")
                 system_message_content += content
+                yield event  # Pass through for UI streaming
+            elif event.get("type") == "context_chunk":
+                content = event.get("content", "")
+                context_message_content += content
                 yield event  # Pass through for UI streaming
             elif event.get("type") == "system_complete":
                 system_content = event.get("content", system_message_content)
@@ -343,6 +348,51 @@ class ChatService:
                     },
                 }
                 system_message_content = ""  # Reset for next system message
+            elif event.get("type") == "context_complete":
+                context_content = event.get("content", context_message_content)
+
+                # Apply placeholder replacement to context message content
+                processed_context_content = await replace_message_placeholders(
+                    context_content, conversation_id
+                )
+
+                # Persist context message to database with role "tool"
+                context_message = Message(
+                    content=processed_context_content,
+                    role="tool",
+                    extra_data={"tool_generated": True},
+                )
+                session.add(context_message)
+                await session.commit()
+                await session.refresh(context_message)
+
+                # Get atomic sequence order
+                sequence_order = await self._get_next_sequence_order(
+                    session, conversation_id
+                )
+                context_attachment = MessageAttachment(
+                    message_id=context_message.id,
+                    entity_type="conversation",
+                    entity_id=conversation_id,
+                    sequence_order=sequence_order,
+                )
+                session.add(context_attachment)
+                await session.commit()
+
+                # Emit context_complete with persisted message info
+                yield {
+                    "type": "context_complete",
+                    "content": processed_context_content,
+                    "message": {
+                        "id": context_message.id,
+                        "content": processed_context_content,
+                        "role": "tool",
+                        "created_at": context_message.created_at.isoformat(),
+                        "conversation_id": conversation_id,
+                        "sequence_order": sequence_order,
+                    },
+                }
+                context_message_content = ""  # Reset for next context message
             elif event.get("type") == "complete":
                 # Handle final assistant message persistence
                 final_content = event.get("content", "")
@@ -1016,6 +1066,7 @@ async def _process_streaming_response(
                 # Initialize variables for tool execution results
                 tool_result = None
                 streamed_accumulator = []
+                context_messages_accumulator = []
                 system_messages_accumulator = []
                 response_context = None
 
@@ -1035,6 +1086,9 @@ async def _process_streaming_response(
                             # Extract results from tool execution
                             tool_result = event["tool_result"]
                             streamed_accumulator = event["streamed_accumulator"]
+                            context_messages_accumulator = event[
+                                "context_messages_accumulator"
+                            ]
                             system_messages_accumulator = event[
                                 "system_messages_accumulator"
                             ]
@@ -1050,6 +1104,7 @@ async def _process_streaming_response(
                     "tool_call_name": tool_call_name,
                     "tool_result": tool_result,
                     "streamed_accumulator": streamed_accumulator,
+                    "context_messages_accumulator": context_messages_accumulator,
                     "system_messages_accumulator": system_messages_accumulator,
                     "updated_final_content": updated_final_content,
                     "response_context": response_context,
@@ -1128,6 +1183,7 @@ async def _process_tool_call_completion(
     tool_call_name = event["tool_call_name"]
     streamed_accumulator = event["streamed_accumulator"]
     system_messages_accumulator = event["system_messages_accumulator"]
+    context_messages_accumulator = event["context_messages_accumulator"]
     final_content = event["updated_final_content"]
     response_context = event["response_context"]
     args = event["args"]
@@ -1201,6 +1257,21 @@ async def _process_tool_call_completion(
         )
         # Add system message to conversation history so AI can see it in subsequent iterations
         base_messages.append({"role": "system", "content": processed_system_content})
+
+    # Add any accumulated context messages to conversation history
+    if context_messages_accumulator:
+        # Combine all context messages from streaming
+        combined_context_content = "".join(context_messages_accumulator)
+        # Apply placeholder replacement before adding to conversation history
+        processed_combined_context_content = await replace_message_placeholders(
+            combined_context_content, conversation_id
+        )
+        base_messages.append(
+            {
+                "role": "tool",
+                "content": processed_combined_context_content,
+            }
+        )
 
     # Add tool result and any streamed content to conversation so model can see it
     # Prefer the streamed content if present, otherwise fall back to the tool_result string.
@@ -1301,7 +1372,9 @@ async def _execute_tool_function(
     # Prepare accumulator for any streamed chunks so we can persist them
     streamed_accumulator = []
     system_messages_accumulator = []
+    context_messages_accumulator = []
     system_chunks_from_generator = []
+    context_chunks_from_generator = []
     updated_final_content = final_content
 
     # Check if the tool result is a generator (for real-time streaming)
@@ -1328,10 +1401,15 @@ async def _execute_tool_function(
                             yield {"type": "system_chunk", "content": chunk.content}
                             # Accumulate system chunks for system_complete event
                             system_chunks_from_generator.append(chunk.content)
+                        elif chunk.type == "context":
+                            yield {"type": "context_chunk", "content": chunk.content}
+                            # Accumulate context chunks for context_complete event
+                            context_chunks_from_generator.append(chunk.content)
                         else:  # assistant chunk
-                            updated_final_content += chunk.content
-                            streamed_accumulator.append(chunk.content)
-                            yield {"type": "chunk", "content": chunk.content}
+                            processed_chunk_content = await replace_message_placeholders(chunk.content, conversation_id)
+                            updated_final_content += processed_chunk_content
+                            streamed_accumulator.append(processed_chunk_content)
+                            yield {"type": "chunk", "content": processed_chunk_content}
             else:
                 # Regular generator
                 for chunk in tool_result:
@@ -1340,10 +1418,15 @@ async def _execute_tool_function(
                             yield {"type": "system_chunk", "content": chunk.content}
                             # Accumulate system chunks for system_complete event
                             system_chunks_from_generator.append(chunk.content)
+                        elif chunk.type == "context":
+                            yield {"type": "context_chunk", "content": chunk.content}
+                            # Accumulate context chunks for context_complete event
+                            context_chunks_from_generator.append(chunk.content)
                         else:  # assistant chunk
-                            updated_final_content += chunk.content
-                            streamed_accumulator.append(chunk.content)
-                            yield {"type": "chunk", "content": chunk.content}
+                            processed_chunk_content = await replace_message_placeholders(chunk.content, conversation_id)
+                            updated_final_content += processed_chunk_content
+                            streamed_accumulator.append(processed_chunk_content)
+                            yield {"type": "chunk", "content": processed_chunk_content}
 
             # After generator completes, emit system_complete if we had system chunks
             if system_chunks_from_generator:
@@ -1352,6 +1435,14 @@ async def _execute_tool_function(
                 )
                 yield {"type": "system_complete", "content": combined_system_content}
                 system_messages_accumulator.append(combined_system_content)
+
+            # After generator completes, emit context_complete if we had context chunks
+            if context_chunks_from_generator:
+                combined_context_content = await replace_message_placeholders(
+                    "".join(context_chunks_from_generator), conversation_id
+                )
+                context_messages_accumulator.append(combined_context_content)
+                yield {"type": "context_complete", "content": combined_context_content}
 
             tool_result = "Generator tool completed"
     else:
@@ -1387,6 +1478,7 @@ async def _execute_tool_function(
         "tool_result": tool_result,
         "streamed_accumulator": streamed_accumulator,
         "system_messages_accumulator": system_messages_accumulator,
+        "context_messages_accumulator": context_messages_accumulator,
         "updated_final_content": updated_final_content,
         "response_context": response_context,
     }
@@ -1419,7 +1511,6 @@ async def inference_loop(
     - 'complete': has 'content' (full final content)
     """
     try:
-        print("loopin")
         client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         yield {"type": "start"}
 
