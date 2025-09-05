@@ -41,6 +41,14 @@ System Prompt Construction
 
 https://github.com/user-attachments/assets/5df8e2fa-4f78-4295-8075-a4e3ac201000
 
+Prompt Editing
+
+
+
+
+https://github.com/user-attachments/assets/b97a7688-d6c5-4b4f-aed4-e22c71bdc746
+
+
 
 Web Browser Simulator Tool
 
