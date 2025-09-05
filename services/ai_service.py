@@ -24,7 +24,7 @@ class AIService:
                 "openai_base_url", "https://api.openai.com/v1"
             ),
             "api_key": await kv_store.get("openai_api_key", ""),
-            "model_name": await kv_store.get("openai_model_name", "gpt-3.5-turbo"),
+            "model_name": await kv_store.get("openai_model_name", "gpt-4.1"),
             "streaming_enabled": await kv_store.get("openai_streaming_enabled", True),
         }
 

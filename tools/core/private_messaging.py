@@ -74,7 +74,7 @@ TOOLS = [
         "one_time": True,
         "schema": {
             "name": "respond_to_private_messages",
-            "description": "Respond privately via private message. Only use this tool for private replies and DO NOT share details of the private chat publicly. Remember, this tool is for confidential communications only.",
+            "description": "Respond privately to non-users via private message. The user can not see your private messages. Do not attempt to talk to the user via private messaging. Only use this tool for private replies to others and DO NOT share details of the private chat publicly. Remember, this tool is for confidential communications only.",
             "parameters": {
                 "type": "object",
                 "properties": {

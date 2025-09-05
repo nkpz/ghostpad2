@@ -553,7 +553,7 @@ async def run_combat_loop(
 
         await asyncio.sleep(1)
 
-        enemy_damage_message = roll_enemy_attack(
+        enemy_damage_message = await roll_enemy_attack(
             user_level, enemy_config, current_user_hp
         )
 

@@ -22,7 +22,7 @@ TOOLS = [
                 "properties": {
                     "thoughts": {
                         "type": "string",
-                        "description": "The thoughts that you don't want to share with the user.",
+                        "description": "The thoughts that you don't want to share with the user. These can be personal thoughts, or they can be a problem-solving thought process. Even if the solution to a problem seems obvious, it is still useful to state your assumptions and establish a ground truth about how things fundamentally work before responding.",
                     }
                 },
                 "required": ["thoughts"],

@@ -29,6 +29,7 @@ interface ComponentRendererProps {
   getValueById?: (id: string) => string;
   getAllValues?: () => Record<string, string>;
   activePersonas?: { id: string; name: string }[];
+  currentConversationId?: string | null;
 }
 
 export const ComponentRenderer = React.forwardRef<any, ComponentRendererProps>(
@@ -40,6 +41,7 @@ export const ComponentRenderer = React.forwardRef<any, ComponentRendererProps>(
       getValueById,
       getAllValues,
       activePersonas,
+      currentConversationId,
     },
     ref
   ) => {
@@ -101,6 +103,7 @@ export const ComponentRenderer = React.forwardRef<any, ComponentRendererProps>(
             data_source={data_source}
             props={props}
             onAction={onAction}
+            currentConversationId={currentConversationId}
           />
         );
 
@@ -134,11 +137,12 @@ export const ComponentRenderer = React.forwardRef<any, ComponentRendererProps>(
                 if (keysToFetch.length === 0) return {};
 
                 // Fetch all keys at once
-                const response = await fetch(
-                  `/api/kv/get?keys=${encodeURIComponent(
-                    keysToFetch.join(",")
-                  )}`
-                );
+                const url = new URL("/api/kv/get", window.location.origin);
+                url.searchParams.set("keys", keysToFetch.join(","));
+                if (currentConversationId) {
+                  url.searchParams.set("conversation_id", currentConversationId);
+                }
+                const response = await fetch(url.toString());
                 const result = await response.json();
 
                 const tableData: Record<string, any> = {};

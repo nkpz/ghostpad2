@@ -103,14 +103,14 @@ export function AutocompleteInput({
         onKeyDown={handleKeyDown}
       />
       {isOpen && filteredOptions.length > 0 && (
-        <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
           {filteredOptions.map((option, index) => (
             <div
               key={option.id}
-              className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+              className={`px-3 py-2 cursor-pointer border-b border-border last:border-b-0 ${
                 index === highlightedIndex 
-                  ? 'bg-blue-100 text-blue-900' 
-                  : 'hover:bg-gray-100'
+                  ? 'bg-accent text-accent-foreground' 
+                  : 'hover:bg-accent/50'
               }`}
               onMouseDown={(e) => {
                 e.preventDefault()
@@ -118,9 +118,9 @@ export function AutocompleteInput({
               }}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
-              <div className="font-medium text-sm">{option.label}</div>
+              <div className="font-medium text-sm text-foreground">{option.label}</div>
               {option.sublabel && (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {option.sublabel}
                 </div>
               )}
@@ -129,13 +129,13 @@ export function AutocompleteInput({
         </div>
       )}
       {isOpen && filteredOptions.length === 0 && options.length > 0 && (
-        <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg px-3 py-2">
-          <div className="text-sm text-gray-500">No options found</div>
+        <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg px-3 py-2">
+          <div className="text-sm text-muted-foreground">No options found</div>
         </div>
       )}
       {isOpen && options.length === 0 && (
-        <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg px-3 py-2">
-          <div className="text-sm text-gray-500">No options available</div>
+        <div className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg px-3 py-2">
+          <div className="text-sm text-muted-foreground">No options available</div>
         </div>
       )}
     </div>

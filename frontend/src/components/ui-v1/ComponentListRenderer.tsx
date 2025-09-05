@@ -218,6 +218,7 @@ export function ComponentListRenderer({
           getValueById={getValueById}
           getAllValues={getAllValues}
           activePersonas={activePersonas}
+          currentConversationId={currentConversationId}
           ref={(ref) => {
             if (component.id && ref) {
               componentRefs.current[component.id] = ref;

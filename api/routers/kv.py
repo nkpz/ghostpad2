@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from typing import Any
 
 from services.kv_store_service import kv_store
+from services.chat_service import replace_message_placeholders
 
 router = APIRouter()
 
@@ -31,19 +32,27 @@ class KVClearRequest(BaseModel):
 
 
 @router.get("/api/kv/get")
-async def kv_get(key: str = None, keys: str = None):
-    """Get scalar value(s) from kv_store. Use 'key' for single value or 'keys' for comma-separated list."""
+async def kv_get(key: str = None, keys: str = None, conversation_id: str = None):
+    """Get scalar value(s) from kv_store. Use 'key' for single value or 'keys' for comma-separated list.
+    If conversation_id is provided, string values will have placeholders replaced."""
     try:
         if keys:
             # Batch get multiple keys
             key_list = [k.strip() for k in keys.split(',') if k.strip()]
             result = {}
             for k in key_list:
-                result[k] = await kv_store.get(k, None)
+                value = await kv_store.get(k, None)
+                # Apply placeholder replacement if conversation_id provided and value is string
+                if conversation_id and isinstance(value, str):
+                    value = await replace_message_placeholders(value, conversation_id)
+                result[k] = value
             return {"keys": result}
         elif key:
             # Single key get
             value = await kv_store.get(key, None)
+            # Apply placeholder replacement if conversation_id provided and value is string
+            if conversation_id and isinstance(value, str):
+                value = await replace_message_placeholders(value, conversation_id)
             return {"key": key, "value": value}
         else:
             raise HTTPException(status_code=400, detail="Must provide either 'key' or 'keys' parameter")
@@ -73,10 +82,18 @@ async def kv_list_len(key: str):
 
 
 @router.get("/api/kv/list")
-async def kv_list(key: str, start: int = Query(-50), end: int = Query(-1)):
-    """Return a slice of a list-like key."""
+async def kv_list(key: str, start: int = Query(-50), end: int = Query(-1), conversation_id: str = None):
+    """Return a slice of a list-like key. If conversation_id is provided, string items will have placeholders replaced."""
     try:
         items = await kv_store.lrange(key, start, end)
+        # Apply placeholder replacement if conversation_id provided
+        if conversation_id and items:
+            processed_items = []
+            for item in items:
+                if isinstance(item, str):
+                    item = await replace_message_placeholders(item, conversation_id)
+                processed_items.append(item)
+            items = processed_items
     except Exception:
         items = []
     return {"key": key, "items": items, "start": start, "end": end}

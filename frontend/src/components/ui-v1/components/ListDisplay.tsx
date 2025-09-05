@@ -13,12 +13,14 @@ interface ListDisplayProps {
     placeholder?: string;
   };
   onAction?: (action: any) => Promise<void>;
+  currentConversationId?: string | null;
 }
 
 export function ListDisplay({
   data_source,
   props,
   onAction,
+  currentConversationId,
 }: Readonly<ListDisplayProps>) {
   const [items, setItems] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -30,13 +32,19 @@ export function ListDisplay({
 
     try {
       const fetchWindow = data_source.fetch_window || 50;
+
+      // Build URL for list API call with conversation_id if available
+      const listUrl = new URL("/api/kv/list", window.location.origin);
+      listUrl.searchParams.set("key", data_source.key);
+      listUrl.searchParams.set("start", String(-fetchWindow));
+      listUrl.searchParams.set("end", "-1");
+      if (currentConversationId) {
+        listUrl.searchParams.set("conversation_id", currentConversationId);
+      }
+
       const [lenRes, listRes] = await Promise.all([
         fetch(`/api/kv/list/len?key=${encodeURIComponent(data_source.key)}`),
-        fetch(
-          `/api/kv/list?key=${encodeURIComponent(
-            data_source.key
-          )}&start=${-fetchWindow}&end=-1`
-        ),
+        fetch(listUrl.toString()),
       ]);
 
       const lenData = await lenRes.json();
