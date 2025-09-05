@@ -33,3 +33,41 @@ This will automatically:
 - **FastAPI Backend**: Serves API routes under `/api/` prefix
 - **React Frontend**: Built with Vite, served from root route
 - **Single Server**: FastAPI serves both API and static files
+
+## Demos
+
+System Prompt Construction
+
+
+https://github.com/user-attachments/assets/5df8e2fa-4f78-4295-8075-a4e3ac201000
+
+
+Web Browser Simulator Tool
+
+
+
+https://github.com/user-attachments/assets/2e697181-a7cb-4f50-98c0-52e2e151858b
+
+
+
+Private Messages Tool
+
+
+https://github.com/user-attachments/assets/c324fc96-ba5c-47cb-b056-11bdf4cb0a66
+
+
+Combat Tool: Fighting The Assistant
+
+
+
+https://github.com/user-attachments/assets/f74184af-ff15-4624-8842-dd54b9d68a97
+
+
+Combat Tool: Fighting A Spawned Enemy
+
+
+
+
+https://github.com/user-attachments/assets/aee21b19-d75f-41f0-95c1-0771fcedd033
+
+
