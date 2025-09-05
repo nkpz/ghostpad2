@@ -360,7 +360,7 @@ TOOLS = [
 ```python
 @dataclass
 class ResponseChunk:
-    type: Literal["assistant", "system"]             # Content destination
+    type: Literal["assistant", "system", "context"]  # Content destination
     content: str                                     # Text content
 ```
 
@@ -371,6 +371,9 @@ def assistant_chunk(content: str) -> ResponseChunk:
 
 def system_chunk(content: str) -> ResponseChunk:
     """Create system message chunk for streaming."""
+
+def context_chunk(content: str) -> ResponseChunk:
+    """Create tool role context message chunk for streaming."""
 ```
 
 ### Streaming Function Signature
@@ -391,54 +394,58 @@ async def streaming_tool(param1: str) -> AsyncGenerator[ResponseChunk, None]:
     """
     yield assistant_chunk("Processing...")
     yield system_chunk("System notification")
+    yield context_chunk("Web search results: The capital of France is Paris.")
     yield assistant_chunk("Complete!")
 ```
 
 ### Complete Streaming Example
 
 ```python
-# tools/file_processor.py
-from utils.tool_utils import assistant_chunk, system_chunk
+# tools/web_search.py
+from utils.tool_utils import assistant_chunk, system_chunk, context_chunk
 from typing import AsyncGenerator
 import asyncio
 
-async def process_file(filename: str) -> AsyncGenerator[ResponseChunk, None]:
+async def web_search(query: str) -> AsyncGenerator[ResponseChunk, None]:
     """
-    Process a file with real-time progress updates.
+    Perform web search with real-time progress and context updates.
     
     Args:
-        filename: Path to file to process
+        query: Search query to process
     
     Yields:
-        ResponseChunk: Progress updates for streaming
+        ResponseChunk: Progress updates and search results
     """
-    yield assistant_chunk(f"Starting to process {filename}...\n")
+    yield assistant_chunk(f"Searching for: {query}...\n")
+
+    # Simulate search steps
+    yield system_chunk("🔍 Connecting to search API\n")
+    await asyncio.sleep(0.5)
     
-    # Simulate file processing steps
-    steps = ["Reading file", "Analyzing content", "Generating report", "Saving results"]
+    yield assistant_chunk("Connected! Performing search...\n")
+    await asyncio.sleep(1.0)  # Simulate API call
     
-    for i, step in enumerate(steps, 1):
-        yield system_chunk(f"🔄 Step {i}/{len(steps)}: {step}\n")
-        await asyncio.sleep(0.5)  # Simulate work
-        yield assistant_chunk(f"  ✓ {step} completed\n")
+    # Provide context that the AI can reference in the same response
+    search_results = f"Search results for '{query}': Found 3 relevant articles about web development best practices."
+    yield context_chunk(search_results)
     
-    yield assistant_chunk("File processing complete!\n")
+    yield assistant_chunk("Search complete! I now have the latest information to answer your question.\n")
 
 TOOLS = [
     {
-        "function": process_file,
+        "function": web_search,
         "schema": {
-            "name": "process_file",
-            "description": "Process a file with real-time progress updates",
+            "name": "web_search",
+            "description": "Perform web search with real-time progress updates",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "filename": {
+                    "query": {
                         "type": "string",
-                        "description": "Path to the file to process"
+                        "description": "Search query to process"
                     }
                 },
-                "required": ["filename"]
+                "required": ["query"]
             }
         }
     }
@@ -450,10 +457,28 @@ TOOLS = [
 1. **Tool Call:** AI calls streaming tool
 2. **Chunk Generation:** Tool yields ResponseChunk objects
 3. **Content Routing:**
-   - `assistant_chunk()` → Added to current AI response
-   - `system_chunk()` → Creates separate system message
+   - `assistant_chunk()` → Added to current AI response (visible to user and AI)
+   - `system_chunk()` → Creates separate system message (visible to user and AI)
+   - `context_chunk()` → Creates tool role message (hidden from user, visible to AI only)
 4. **Real-time Display:** UI updates in real-time as chunks arrive
 5. **Message Persistence:** Final content saved to conversation history
+
+### Chunk Type Usage Patterns
+
+**Use `assistant_chunk()` when:**
+- Providing user-facing updates or results
+- Showing progress or status messages
+- Displaying tool output that should appear in the AI's response
+
+**Use `system_chunk()` when:**
+- Providing notifications visible to both user and AI
+- Adding metadata or technical information that should be transparent
+- Creating system messages that appear in the conversation
+
+**Use `context_chunk()` when:**
+- Providing private context data that only the AI should see
+- Adding search results, API responses, or external data for AI reference
+- Supplying background information that enhances the AI's knowledge without cluttering the user interface
 
 ---
 
